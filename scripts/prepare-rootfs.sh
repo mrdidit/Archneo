@@ -96,9 +96,17 @@ mount --rbind /sys "${rootfs}/sys"
 mount --make-rslave "${rootfs}/sys"
 mounted_sys=1
 
+archneo_chroot() {
+  # Ubuntu's qemu-user-static build has a host-oriented default interpreter
+  # prefix. Inside this chroot, -L / makes guest ELF interpreters resolve from
+  # the verified Arch Linux ARM root rather than QEMU's host prefix.
+  chroot "$rootfs" /usr/bin/qemu-aarch64-static -L / "$@"
+}
+
 archneo_log "updating and configuring the aarch64 rootfs under qemu"
-chroot "$rootfs" /usr/bin/qemu-aarch64-static \
-  /bin/bash /root/archneo-configure-rootfs.sh "$kernel_release"
+archneo_chroot /bin/true || \
+  archneo_die "qemu could not execute aarch64 programs in the prepared rootfs"
+archneo_chroot /bin/bash /root/archneo-configure-rootfs.sh "$kernel_release"
 
 # Apply the pinned ROCKNIX firmware after the rolling system update so pacman
 # cannot replace it, then generate the initramfs from the final tree. Upstream
@@ -108,8 +116,7 @@ archneo_log "installing pinned firmware and generating the Archneo initramfs"
 install -d -m 0755 "${rootfs}/usr/lib/firmware"
 rsync -aHAX --numeric-ids --exclude='/.archneo-complete' \
   "${extra_firmware_stage}/SM8550/." "${rootfs}/usr/lib/firmware/"
-chroot "$rootfs" /usr/bin/qemu-aarch64-static \
-  /usr/bin/mkinitcpio \
+archneo_chroot /usr/bin/mkinitcpio \
   -k "$kernel_release" \
   -c /etc/mkinitcpio.conf.d/archneo.conf \
   -g /boot/initramfs-linux-archneo.img

@@ -117,6 +117,15 @@ the uploaded workflow artifact digest was
 `df44dd26ea9f35b4662d0c8cdfeb07b9b1506c722f8ef3ad32510eb49aa03f72`.
 Hardware remained untested.
 
+The first full-image attempt, GitHub Actions run
+[`33071305455`](https://github.com/mrdidit/Archneo/actions/runs/33071305455),
+verified both source archives and the Arch Linux ARM signature, then stopped
+before modifying the rootfs because Ubuntu's explicitly invoked
+`qemu-aarch64-static` used its host-oriented default ELF-interpreter prefix.
+No image was produced. The chroot wrapper now passes `-L /` and performs an
+aarch64 `/bin/true` preflight before running Pacman; the replacement run is
+pending.
+
 ## Source and patch policy
 
 [`config/sources.env`](../config/sources.env) is the source lock. The preparation

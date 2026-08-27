@@ -37,7 +37,7 @@ The following evidence is required before changing the status from `untested`:
 | --- | --- | --- |
 | Kernel/DTB compile | Passed | GitHub Actions run [`33063572182`](https://github.com/mrdidit/Archneo/actions/runs/33063572182), commit `c51aabe928b731370450c5f096c1fedd16311c29` |
 | Android boot wrapper | Passed (dummy ramdisk only) | Artifact `archneo-ayaneo-pocket-s-2k-c51aabe928b731370450c5f096c1fedd16311c29` |
-| Complete image assembly | Not tested | Pending first full-image workflow |
+| Complete image assembly | Failed before rootfs configuration | Run [`33071305455`](https://github.com/mrdidit/Archneo/actions/runs/33071305455): QEMU loader-prefix error; correction awaiting CI |
 | ABL prerequisite | Not recorded | Working ROCKNIX-ABL version required |
 | ROCKNIX baseline | Not captured | Pending |
 | ABL boot | Not tested | Pending |
