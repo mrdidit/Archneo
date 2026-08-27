@@ -79,7 +79,7 @@ find /boot -mindepth 1 -maxdepth 1 -delete
 
 install -d -m 0755 /usr/share/archneo /var/lib/archneo /var/log/journal
 pacman -Q > /usr/share/archneo/packages.txt
-pacman -Scc --noconfirm
+find /var/cache/pacman/pkg -mindepth 1 -delete
 
 # Let systemd create unique identities and random state on the target.
 : > /etc/machine-id

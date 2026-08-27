@@ -117,16 +117,17 @@ the uploaded workflow artifact digest was
 `df44dd26ea9f35b4662d0c8cdfeb07b9b1506c722f8ef3ad32510eb49aa03f72`.
 Hardware remained untested.
 
-The first four full-image attempts, GitHub Actions runs
+The first five full-image attempts, GitHub Actions runs
 [`33071305455`](https://github.com/mrdidit/Archneo/actions/runs/33071305455) and
 [`33074171748`](https://github.com/mrdidit/Archneo/actions/runs/33074171748),
 then [`33079249905`](https://github.com/mrdidit/Archneo/actions/runs/33079249905),
 and [`33083220681`](https://github.com/mrdidit/Archneo/actions/runs/33083220681),
-all verified both source archives and the Arch Linux ARM signature. No image
-was produced. The first two failed the initial aarch64 execution. Inspection
-and a minimal reproduction showed that syncing the kernel's top-level
-`lib/modules` overlay replaced Arch's `/lib -> usr/lib` compatibility symlink
-with a directory, making the interpreter unreachable.
+then [`33086444548`](https://github.com/mrdidit/Archneo/actions/runs/33086444548),
+all verified both source archives and the Arch Linux ARM signature. No image was
+produced. The first two failed the initial aarch64 execution. Inspection and a
+minimal reproduction showed that syncing the kernel's top-level `lib/modules`
+overlay replaced Arch's `/lib -> usr/lib` compatibility symlink with a
+directory, making the interpreter unreachable.
 
 Module installation now copies only the contents below `lib/modules` into
 `/usr/lib/modules`. Before QEMU starts, the builder requires `/lib -> usr/lib`,
@@ -140,7 +141,16 @@ the complete package transaction, then Pacman's `CheckSpace` safety check could
 not map `/var/cache/pacman/pkg` to a mount point because the chroot root was a
 plain host directory. The builder now makes the rootfs a private self-bind
 mount and verifies the cache mount/free-space view before Pacman. The
-replacement run is pending.
+fifth run completed the package transaction, account setup, and service
+enablement, then stopped when the builder passed the Bash-based `mkinitcpio`
+script directly to QEMU as an ELF program. The log also showed that archival
+overlay copies had propagated runner UID 1001 onto system directories, causing
+systemd's safety checks to reject paths during package hooks.
+
+Build-supplied modules, policy files, and firmware are now explicitly owned by
+root, and `/`, `/etc`, and `/usr` ownership is validated before entering the
+chroot. `mkinitcpio` now runs through guest Bash. Files created for `deck` later
+retain UID/GID 1000. The replacement run is pending.
 
 ## Source and patch policy
 

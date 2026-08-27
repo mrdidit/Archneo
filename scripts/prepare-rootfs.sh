@@ -66,8 +66,9 @@ archneo_log "installing custom modules and the Archneo rootfs policy overlay"
 # into Arch's canonical usr-merged location; syncing the top-level lib directory
 # would replace the rootfs's /lib -> usr/lib compatibility symlink.
 install -d -m 0755 "${rootfs}/usr/lib/modules"
-rsync -aHAX --numeric-ids "${modules_root}/." "${rootfs}/usr/lib/modules/"
-rsync -aHAX --numeric-ids "${ARCHNEO_PROJECT_ROOT}/rootfs-overlay/." "$rootfs/"
+rsync -aHAX --chown=0:0 "${modules_root}/." "${rootfs}/usr/lib/modules/"
+rsync -aHAX --chown=0:0 "${ARCHNEO_PROJECT_ROOT}/rootfs-overlay/." "$rootfs/"
+chown 0:0 "$rootfs"
 
 [[ -L "${rootfs}/lib" && "$(readlink "${rootfs}/lib")" == "usr/lib" ]] || \
   archneo_die "prepared rootfs lost its /lib -> usr/lib compatibility symlink"
@@ -75,6 +76,10 @@ rsync -aHAX --numeric-ids "${ARCHNEO_PROJECT_ROOT}/rootfs-overlay/." "$rootfs/"
   archneo_die "prepared rootfs is missing its aarch64 ELF interpreter"
 [[ -L "${rootfs}/bin" && "$(readlink "${rootfs}/bin")" == "usr/bin" ]] || \
   archneo_die "prepared rootfs lost its /bin -> usr/bin compatibility symlink"
+for root_owned_path in "$rootfs" "${rootfs}/etc" "${rootfs}/usr"; do
+  [[ "$(stat -c '%u:%g' "$root_owned_path")" == "0:0" ]] || \
+    archneo_die "system path is not root-owned: ${root_owned_path}"
+done
 
 [[ "$(. "${rootfs}/etc/archneo.conf"; printf '%s' "$ARCHNEO_HOME_FS_UUID")" == \
   "$ARCHNEO_HOME_FS_UUID" ]] || archneo_die "runtime home UUID disagrees with platform.env"
@@ -132,9 +137,9 @@ archneo_chroot /bin/bash /root/archneo-configure-rootfs.sh "$kernel_release"
 # the package manifest.
 archneo_log "installing pinned firmware and generating the Archneo initramfs"
 install -d -m 0755 "${rootfs}/usr/lib/firmware"
-rsync -aHAX --numeric-ids --exclude='/.archneo-complete' \
+rsync -aHAX --chown=0:0 --exclude='/.archneo-complete' \
   "${extra_firmware_stage}/SM8550/." "${rootfs}/usr/lib/firmware/"
-archneo_chroot /usr/bin/mkinitcpio \
+archneo_chroot /bin/bash /usr/bin/mkinitcpio \
   -k "$kernel_release" \
   -c /etc/mkinitcpio.conf.d/archneo.conf \
   -g /boot/initramfs-linux-archneo.img
