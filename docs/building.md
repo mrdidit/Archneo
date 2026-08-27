@@ -117,14 +117,20 @@ the uploaded workflow artifact digest was
 `df44dd26ea9f35b4662d0c8cdfeb07b9b1506c722f8ef3ad32510eb49aa03f72`.
 Hardware remained untested.
 
-The first full-image attempt, GitHub Actions run
-[`33071305455`](https://github.com/mrdidit/Archneo/actions/runs/33071305455),
-verified both source archives and the Arch Linux ARM signature, then stopped
-before modifying the rootfs because Ubuntu's explicitly invoked
-`qemu-aarch64-static` used its host-oriented default ELF-interpreter prefix.
-No image was produced. The chroot wrapper now passes `-L /` and performs an
-aarch64 `/bin/true` preflight before running Pacman; the replacement run is
-pending.
+The first two full-image attempts, GitHub Actions runs
+[`33071305455`](https://github.com/mrdidit/Archneo/actions/runs/33071305455) and
+[`33074171748`](https://github.com/mrdidit/Archneo/actions/runs/33074171748),
+verified both source archives and the Arch Linux ARM signature, then failed the
+first aarch64 execution preflight. Inspection of the verified archive proved
+that the required ELF interpreter was present. A minimal reproduction then
+showed that syncing the kernel's top-level `lib/modules` overlay replaced
+Arch's `/lib -> usr/lib` compatibility symlink with a directory, making the
+interpreter unreachable. No image was produced in either run.
+
+Module installation now copies only the contents below `lib/modules` into
+`/usr/lib/modules`. Before QEMU starts, the builder requires `/lib -> usr/lib`,
+`/bin -> usr/bin`, and an executable aarch64 interpreter. It then runs an
+aarch64 `/bin/true` preflight before Pacman; the replacement run is pending.
 
 ## Source and patch policy
 

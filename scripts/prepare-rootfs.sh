@@ -61,9 +61,20 @@ if [[ ! -e "${extra_firmware_stage}/.archneo-complete" ]]; then
   touch "${extra_firmware_stage}/.archneo-complete"
 fi
 
-archneo_log "installing custom modules and pinned SM8550 firmware"
-rsync -aHAX --numeric-ids "${device_out}/rootfs-overlay/." "$rootfs/"
+archneo_log "installing custom modules and the Archneo rootfs policy overlay"
+# modules_install emits lib/modules below INSTALL_MOD_PATH. Copy the contents
+# into Arch's canonical usr-merged location; syncing the top-level lib directory
+# would replace the rootfs's /lib -> usr/lib compatibility symlink.
+install -d -m 0755 "${rootfs}/usr/lib/modules"
+rsync -aHAX --numeric-ids "${modules_root}/." "${rootfs}/usr/lib/modules/"
 rsync -aHAX --numeric-ids "${ARCHNEO_PROJECT_ROOT}/rootfs-overlay/." "$rootfs/"
+
+[[ -L "${rootfs}/lib" && "$(readlink "${rootfs}/lib")" == "usr/lib" ]] || \
+  archneo_die "prepared rootfs lost its /lib -> usr/lib compatibility symlink"
+[[ -x "${rootfs}/usr/lib/ld-linux-aarch64.so.1" ]] || \
+  archneo_die "prepared rootfs is missing its aarch64 ELF interpreter"
+[[ -L "${rootfs}/bin" && "$(readlink "${rootfs}/bin")" == "usr/bin" ]] || \
+  archneo_die "prepared rootfs lost its /bin -> usr/bin compatibility symlink"
 
 [[ "$(. "${rootfs}/etc/archneo.conf"; printf '%s' "$ARCHNEO_HOME_FS_UUID")" == \
   "$ARCHNEO_HOME_FS_UUID" ]] || archneo_die "runtime home UUID disagrees with platform.env"
@@ -97,9 +108,8 @@ mount --make-rslave "${rootfs}/sys"
 mounted_sys=1
 
 archneo_chroot() {
-  # Ubuntu's qemu-user-static build has a host-oriented default interpreter
-  # prefix. Inside this chroot, -L / makes guest ELF interpreters resolve from
-  # the verified Arch Linux ARM root rather than QEMU's host prefix.
+  # Make the guest root explicit rather than inheriting a distribution-specific
+  # QEMU interpreter prefix.
   chroot "$rootfs" /usr/bin/qemu-aarch64-static -L / "$@"
 }
 
