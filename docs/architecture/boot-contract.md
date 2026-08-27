@@ -66,28 +66,37 @@ Arch installation:
 | FAT label | `ROCKNIX` | required ROCKNIX-ABL compatibility contract |
 | Boot payload | `/KERNEL` | matches public ROCKNIX layout |
 | DTB in payload | Pocket S 2K only | make the first artifact unambiguous |
-| Root partition | ext4, label `ARCHNEO_ROOT` | normal writable Arch root |
-| Embedded initramfs | none | ROCKNIX's appliance `/init` is not usable as Arch's root |
-| Boot command line | `boot=LABEL=ROCKNIX disk=LABEL=ARCHNEO_ROOT` | preserve the ROCKNIX-ABL-facing convention |
-| Root command line | `root=LABEL=ARCHNEO_ROOT rootfstype=ext4 rw rootwait` | direct ext4 root mount |
+| Root partition | 30 GiB ext4 | normal writable Arch root |
+| Home partition | ext4 seed, expanded to remaining media | independent user data without Btrfs |
+| Kernel-built-in initramfs | none | keep rootfs tooling out of the kernel binary |
+| Android boot-image ramdisk | Archneo mkinitcpio image | discover a filesystem UUID before mounting root |
+| Boot command line | `boot=LABEL=ROCKNIX` | preserve the ABL-facing label convention |
+| Root command line | `disk=UUID=… root=UUID=… rootfstype=ext4 rw rootwait` | avoid unstable device paths and partition identifiers |
 | Console | `ttyMSM0` and `tty0`, verbose logging | early bring-up evidence |
 
-The inherited kernel configuration builds the Qualcomm SDHCI/MMC path and
-ext4 into the kernel, so a direct root mount does not depend on modules from an
-unmounted filesystem.
+The compile-smoke artifact deliberately retains ROCKNIX's five-byte `dummy`
+ramdisk to validate compilation and Android-container packaging. It is not the
+bootable Archneo artifact. Complete images replace it with an initramfs using
+mkinitcpio's `udev`, `block`, `filesystems`, and `fsck` hooks. The kernel still
+builds the essential Qualcomm SDHCI/MMC and ext4 paths in, but early userspace
+is responsible for resolving `root=UUID=…`.
+
+The removable image uses stable, machine-readable filesystem UUIDs from
+[`config/platform.env`](../../config/platform.env). `/etc/fstab` names `/boot`,
+`/`, and `/home` by filesystem UUID. The final home partition expands on first
+boot without regenerating its UUID. The FAT label remains `ROCKNIX` regardless
+of its FAT filesystem UUID.
 
 ## Hardware questions still open
 
 The first controlled boot must establish:
 
-- whether the 16 MiB offset and 2048 MiB FAT size are required or merely
-  ROCKNIX defaults;
 - how ABL identifies and selects appended DTBs;
 - whether a single appended Pocket S 2K DTB is accepted; and
 - where useful loader and early-kernel diagnostics can be captured.
 
-Archneo will not experiment with an alternative FAT label: `ROCKNIX` is part
-of the project's ABL compatibility contract. Until the remaining evidence
-exists, a smaller FAT partition and multi-device payloads are experiments
-rather than supported formats. The corresponding machine-readable constants
-are in [`config/platform.env`](../../config/platform.env).
+Archneo will not experiment with an alternative FAT label or a smaller initial
+FAT partition: `ROCKNIX` and 2048 MiB are part of the project's conservative
+ABL compatibility profile. Multi-device payloads remain experiments rather
+than supported formats. The corresponding machine-readable constants are in
+[`config/platform.env`](../../config/platform.env).

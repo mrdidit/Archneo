@@ -1,4 +1,4 @@
-name: Build Pocket S 2K kernel
+name: Build Pocket S 2K image
 
 on:
   workflow_dispatch:
@@ -8,12 +8,14 @@ on:
     paths:
       - ".github/workflows/kernel.yml"
       - "config/**"
+      - "rootfs-overlay/**"
       - "scripts/**"
       - "Makefile"
   pull_request:
     paths:
       - ".github/workflows/kernel.yml"
       - "config/**"
+      - "rootfs-overlay/**"
       - "scripts/**"
       - "Makefile"
 
@@ -23,7 +25,7 @@ permissions:
 jobs:
   pocket-s-2k:
     runs-on: ubuntu-24.04
-    timeout-minutes: 120
+    timeout-minutes: 180
 
     steps:
       - name: Check out Archneo
@@ -32,7 +34,7 @@ jobs:
       - name: Verify repository metadata
         run: make verify
 
-      - name: Install kernel build dependencies
+      - name: Install build and image dependencies
         run: |
           sudo apt-get update
           sudo apt-get install --yes \
@@ -40,16 +42,25 @@ jobs:
             bison \
             build-essential \
             curl \
+            dosfstools \
             dwarves \
+            e2fsprogs \
+            fdisk \
             flex \
             gcc-aarch64-linux-gnu \
+            gdisk \
             git \
+            gnupg \
             kmod \
+            libarchive-tools \
             libelf-dev \
             libncurses-dev \
             libssl-dev \
             patch \
+            parted \
             python3 \
+            qemu-user-static \
+            rsync \
             xz-utils
 
       - name: Build Pocket S 2K ABL payload
@@ -57,10 +68,22 @@ jobs:
           ARCHNEO_BUILD_DIR: ${{ github.workspace }}/.ci-build
         run: make kernel
 
-      - name: Upload Pocket S 2K payload and manifest
+      - name: Assemble Archneo removable image
+        env:
+          ARCHNEO_BUILD_DIR: ${{ github.workspace }}/.ci-build
+          ARCHNEO_CACHE_DIR: ${{ github.workspace }}/.cache
+          ARCHNEO_OUT_DIR: ${{ github.workspace }}/out
+        run: |
+          sudo env \
+            ARCHNEO_BUILD_DIR="$ARCHNEO_BUILD_DIR" \
+            ARCHNEO_CACHE_DIR="$ARCHNEO_CACHE_DIR" \
+            ARCHNEO_OUT_DIR="$ARCHNEO_OUT_DIR" \
+            ./scripts/build-image.sh
+
+      - name: Upload Pocket S 2K image and manifests
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: archneo-ayaneo-pocket-s-2k-${{ github.sha }}
+          name: archneo-image-ayaneo-pocket-s-2k-${{ github.sha }}
           path: out/ayaneo-pocket-s-2k/
           if-no-files-found: error
           retention-days: 14

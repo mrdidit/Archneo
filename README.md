@@ -6,8 +6,9 @@ from ROCKNIX and a ROCKNIX-ABL-compatible boot layout.
 
 > [!WARNING]
 > Archneo is at the research and bring-up stage. It now has kernel preparation
-> and packaging code, but does not yet produce a complete bootable image. It
-> does not install or modify ABL.
+> and complete removable-image assembly code, but the resulting image has not
+> yet passed its CI assembly run or a hardware boot test. It does not install
+> or modify ABL.
 
 ## Goals
 
@@ -26,8 +27,9 @@ order:
 2. AYANEO Pocket EVO (`ayaneo-pocket-evo`)
 
 The similarly named AYANEO Pocket S2 is an SM8650 device and is not one of
-these initial targets. Source preparation and `KERNEL` payload packaging are
-implemented; rootfs and full removable-image construction are next.
+these initial targets. Source preparation and a compile-smoke `KERNEL` payload
+have passed CI. Rootfs, real-initramfs, firmware, and complete removable-image
+assembly are implemented and await their first CI run and hardware test.
 
 See the [documentation index](docs/README.md) and [bring-up roadmap](docs/roadmap.md)
 for the current plan and evidence requirements.
@@ -43,6 +45,7 @@ before producing test media.
 make verify
 make prepare-kernel
 make kernel
+sudo make image
 ```
 
 See [building Archneo](docs/building.md) for host dependencies, outputs, and

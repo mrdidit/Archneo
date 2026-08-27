@@ -1,8 +1,8 @@
 # Building Archneo
 
-The repository currently prepares and builds the first boot component: a
-ROCKNIX-ABL-compatible `KERNEL` payload for the AYANEO Pocket S 2K. Rootfs and
-complete disk-image construction are the next implementation stage.
+The repository prepares the ROCKNIX-derived kernel and Pocket S 2K device tree,
+constructs an Arch Linux ARM rootfs, builds a real initramfs, and assembles a
+complete ROCKNIX-ABL-compatible removable-media image.
 
 ## Host requirements
 
@@ -15,7 +15,15 @@ libelf-dev libncurses-dev libssl-dev patch python3 xz-utils
 ```
 
 No container or root privileges are required for source preparation or kernel
-compilation. Image assembly will add FAT/ext4 tooling later. Kernel trees
+compilation. Rootfs and image assembly additionally require:
+
+```text
+dosfstools e2fsprogs fdisk gdisk gnupg libarchive-tools parted
+qemu-user-static rsync
+```
+
+Rootfs extraction, aarch64 chroot configuration, loop devices, filesystem
+creation, and mounting require root. Kernel trees
 default to the persistent `${XDG_CACHE_HOME:-~/.cache}/archneo/build` because
 the Linux build system rejects source paths containing spaces. They are not
 placed in `/tmp`, so multi-day work survives normal temporary-file cleanup.
@@ -38,7 +46,7 @@ make prepare-kernel
 ```
 
 Cross-build the Pocket S 2K kernel, DTB, and modules, then create the Android
-boot-image-v0 payload:
+boot-image-v0 compile-smoke payload:
 
 ```sh
 make kernel
@@ -50,9 +58,36 @@ The primary output is:
 out/ayaneo-pocket-s-2k/KERNEL
 ```
 
-Its directory also contains `KERNEL.sha256`, a build manifest, the intermediate
-kernel/DTB stream, and a modules rootfs overlay. Build and download directories
-are intentionally untracked.
+This payload contains ROCKNIX's literal `dummy` ramdisk. It proves that the
+selected source, patch stack, configuration, DTB, modules, and Android wrapper
+compile successfully; it is not a complete Archneo boot artifact.
+
+Build the complete removable image after `make kernel`:
+
+```sh
+sudo make image
+```
+
+The image stage:
+
+1. downloads the generic Arch Linux ARM rootfs and verifies its detached
+   signature against a checksum-pinned official keyring;
+2. installs the custom modules, Arch Linux ARM's version-recorded
+   `linux-firmware` package, and checksum-pinned ROCKNIX SM8550 firmware;
+3. updates the rootfs under qemu, removes `alarm`, creates `deck`, and generates
+   the mkinitcpio image;
+4. rebuilds `/KERNEL` with that real initramfs; and
+5. creates and verifies the FAT32/ext4/ext4 disk image.
+
+The published output is:
+
+```text
+out/ayaneo-pocket-s-2k/Archneo-ayaneo-pocket-s-2k.img.gz
+```
+
+The compressed image, SHA-256 file, partition-table JSON, and build manifests
+are retained in `out`. The large sparse raw image remains in the persistent
+build directory rather than `/tmp`.
 
 Pocket EVO is recognized by the build script for later development, but it is
 not the default and does not yet constitute a supported artifact:
@@ -68,12 +103,19 @@ contain spaces or colons.
 
 ## Continuous build
 
-The `Build Pocket S 2K kernel` GitHub Actions workflow runs the same verification
-and `make kernel` path on relevant changes to `main`, on pull requests, and on
-manual dispatch. It installs the documented compiler dependencies on the
-runner and retains the payload directory as a workflow artifact for 14 days.
-The workflow is a compile/package check; an uploaded artifact is not a hardware
-validation result or a release image.
+The `Build Pocket S 2K image` GitHub Actions workflow runs verification,
+`make kernel`, and the privileged image assembly path on relevant changes. It
+retains the compressed image and its manifests for 14 days. A successful
+workflow proves build and filesystem verification only; it is not hardware
+boot evidence or a supported release.
+
+The first kernel-only milestone passed in GitHub Actions run
+[`33063572182`](https://github.com/mrdidit/Archneo/actions/runs/33063572182).
+Its `KERNEL` SHA-256 was
+`cecdb51388817285e8391b6e3096716a2422eb096b3898c891639bf6d756d07a`;
+the uploaded workflow artifact digest was
+`df44dd26ea9f35b4662d0c8cdfeb07b9b1506c722f8ef3ad32510eb49aa03f72`.
+Hardware remained untested.
 
 ## Source and patch policy
 
@@ -90,14 +132,42 @@ overlay is then copied into the kernel tree, while the packaged payload uses
 only the selected device DTB.
 
 ROCKNIX normally embeds its appliance initramfs. Archneo clears
-`CONFIG_INITRAMFS_SOURCE`, sets its hostname/local version, and mounts an ext4
-Arch root directly. Those deltas are recorded in
+`CONFIG_INITRAMFS_SOURCE` and sets its hostname/local version. The complete
+image supplies a separate mkinitcpio ramdisk in the Android boot image so the
+root filesystem can be located by UUID. The kernel deltas are recorded in
 [`config/kernel/archneo-sm8550.fragment`](../config/kernel/archneo-sm8550.fragment).
 
 ## Reproducibility boundary
 
-The Linux and `mkbootimg` archives are checksum-pinned. The ROCKNIX source is
-commit-pinned. The generic Arch Linux ARM rootfs URL is currently a moving
-`latest` artifact; it will be signature-verified and snapshotted before
-Archneo publishes a release. Until then, the project must not describe a full
-image as reproducible.
+The Linux, ROCKNIX extra-firmware, and `mkbootimg` archives are checksum-pinned.
+ROCKNIX sources are commit-pinned. The generic Arch Linux ARM rootfs URL is a moving
+`latest` artifact: every downloaded copy is signature-verified and its exact
+SHA-256 is recorded, but CI can receive a newer valid snapshot. A release must
+pin or archive that verified snapshot before claiming byte-for-byte
+reproducibility. The full system upgrade also follows Arch Linux ARM's live
+package repositories and is recorded in the image package manifest.
+
+Arch Linux ARM's official rootfs host redirects downloads to HTTP mirrors and
+does not present a certificate valid for `os.archlinuxarm.org`. The build does
+not treat that transport as trusted: it accepts only the exact configured
+official rootfs/signature paths, obtains the official keyring from a pinned
+HTTPS URL with a pinned SHA-256, and rejects the rootfs unless its detached
+signature validates to the configured signing fingerprint.
+
+## Firmware provenance boundary
+
+Upstream firmware is installed through Arch Linux ARM's `linux-firmware`
+package family, whose exact installed versions are captured in
+`/usr/share/archneo/packages.txt`. SM8550 device-specific files come from the
+commit and archive checksum in `config/sources.env`. At the pinned ROCKNIX
+revision, its
+[`extra-firmware` package metadata](https://github.com/ROCKNIX/distribution/blob/13e18947d2d41b17015f5df18405adefc4dfb2f5/projects/ROCKNIX/packages/linux-firmware/extra-firmware/package.mk)
+classifies those blobs as `proprietary` and copies the `SM8550` subtree into
+the firmware directory.
+
+The source repository does not provide a general licence file covering that
+SM8550 subtree. Archneo therefore records its provenance but does not infer
+redistribution permission from public availability. Full-image artifacts are
+bring-up builds, not licence-cleared releases; public release remains blocked
+until every redistributed blob has an adequate licence or a documented lawful
+distribution basis.

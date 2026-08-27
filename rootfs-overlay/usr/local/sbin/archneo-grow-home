@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+# shellcheck source=/etc/archneo.conf
+source /etc/archneo.conf
+
+marker="/var/lib/archneo/home-expanded"
+[[ ! -e "$marker" ]] || exit 0
+
+for command in blkid blockdev e2fsck findmnt lsblk parted partx readlink resize2fs udevadm; do
+  command -v "$command" >/dev/null 2>&1 || {
+    printf 'archneo-grow-home: missing command: %s\n' "$command" >&2
+    exit 1
+  }
+done
+
+home_device="$(blkid -U "$ARCHNEO_HOME_FS_UUID" || true)"
+[[ -n "$home_device" && -b "$home_device" ]] || {
+  printf 'archneo-grow-home: home UUID was not found\n' >&2
+  exit 1
+}
+
+partition_number="$(lsblk -ndo PARTN "$home_device")"
+parent_name="$(lsblk -ndo PKNAME "$home_device")"
+[[ "$partition_number" == "3" && -n "$parent_name" ]] || {
+  printf 'archneo-grow-home: refusing unexpected home target: %s\n' "$home_device" >&2
+  exit 1
+}
+disk="/dev/${parent_name}"
+
+root_device="$(readlink -f "$(findmnt -nro SOURCE /)")"
+root_parent="$(lsblk -ndo PKNAME "$root_device")"
+[[ -n "$root_parent" && "$root_parent" == "$parent_name" ]] || {
+  printf 'archneo-grow-home: root and home are not on the same disk\n' >&2
+  exit 1
+}
+
+before_bytes="$(blockdev --getsize64 "$home_device")"
+parted --script --fix "$disk" resizepart "$partition_number" 100%
+partx --update --nr "$partition_number" "$disk"
+udevadm settle
+
+set +e
+e2fsck -pf "$home_device"
+fsck_status=$?
+set -e
+(( fsck_status <= 1 )) || {
+  printf 'archneo-grow-home: e2fsck stopped with status %s\n' "$fsck_status" >&2
+  exit "$fsck_status"
+}
+
+resize2fs "$home_device"
+after_bytes="$(blockdev --getsize64 "$home_device")"
+install -d -m 0755 /var/lib/archneo
+touch "$marker"
+printf 'archneo-grow-home: grew %s from %s to %s bytes\n' \
+  "$home_device" "$before_bytes" "$after_bytes"

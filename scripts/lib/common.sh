@@ -10,7 +10,14 @@ ARCHNEO_CACHE_DIR="${ARCHNEO_CACHE_DIR:-${ARCHNEO_PROJECT_ROOT}/.cache}"
 if [[ -n "${XDG_CACHE_HOME:-}" ]]; then
   ARCHNEO_USER_CACHE_BASE="$XDG_CACHE_HOME"
 else
-  ARCHNEO_USER_HOME="$(getent passwd "$(id -u)" | cut -d: -f6)"
+  # A privileged image build must reuse the invoking user's compiled kernel,
+  # not silently switch from that user's cache to /root/.cache.
+  if [[ -n "${SUDO_USER:-}" && "$SUDO_USER" != "root" ]]; then
+    ARCHNEO_CACHE_USER="$SUDO_USER"
+  else
+    ARCHNEO_CACHE_USER="$(id -u)"
+  fi
+  ARCHNEO_USER_HOME="$(getent passwd "$ARCHNEO_CACHE_USER" | cut -d: -f6)"
   [[ -n "$ARCHNEO_USER_HOME" ]] || {
     printf 'archneo: error: unable to determine the current user home\n' >&2
     exit 1

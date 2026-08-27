@@ -14,8 +14,10 @@ permits. Device-tree and hardware-specific configuration remain separate.
 AYANEO Pocket S2 support is out of scope for this milestone. Despite its
 similar name, it is an SM8650 device.
 
-Current implementation phase: reproducible kernel input preparation and
-Pocket S 2K payload packaging. Full rootfs and disk-image assembly are next.
+Current implementation phase: the Pocket S 2K kernel and dummy-ramdisk
+compile-smoke payload pass CI. Full rootfs, real-initramfs, and removable-image
+assembly are implemented and awaiting their first CI result, followed by the
+first hardware boot.
 
 ## Phases
 
@@ -78,6 +80,16 @@ scope.
 - Document removable-media installation, update, and rollback.
 - Treat internal installation as a separate future project, not part of the
   initial milestone.
+
+### 7. Add the separately gated internal installer
+
+- Prompt independently for `/boot`, `/`, and `/home` sizes.
+- Default to 2 GiB, 30 GiB, and all remaining capacity.
+- Preview the exact target and partition map before an explicit destructive
+  confirmation.
+- Keep `/boot` FAT32 with label `ROCKNIX`; generate per-install filesystem
+  UUIDs and update both `fstab` and the ABL payload.
+- Never expose this path through the removable-image build command.
 
 ## Definition of supported
 

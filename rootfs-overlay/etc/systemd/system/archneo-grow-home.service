@@ -1,0 +1,14 @@
+[Unit]
+Description=Expand the Archneo home partition to fill its device
+DefaultDependencies=no
+ConditionPathExists=!/var/lib/archneo/home-expanded
+After=systemd-remount-fs.service systemd-udev-settle.service
+Before=home.mount local-fs.target
+Wants=systemd-udev-settle.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/archneo-grow-home
+
+[Install]
+WantedBy=local-fs.target

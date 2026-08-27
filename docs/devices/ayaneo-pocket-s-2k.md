@@ -5,7 +5,7 @@
 - Archneo identifier: `ayaneo-pocket-s-2k`
 - SoC/platform: Qualcomm SM8550
 - Bring-up priority: first
-- Current Archneo status: build scaffolding implemented; hardware untested
+- Current Archneo status: kernel compile/package passed; full image and hardware untested
 
 This page describes the original AYANEO Pocket S with the 2K display. It does
 not describe the AYANEO Pocket S2, which uses SM8650.
@@ -35,6 +35,9 @@ The following evidence is required before changing the status from `untested`:
 
 | Area | Status | Evidence |
 | --- | --- | --- |
+| Kernel/DTB compile | Passed | GitHub Actions run [`33063572182`](https://github.com/mrdidit/Archneo/actions/runs/33063572182), commit `c51aabe928b731370450c5f096c1fedd16311c29` |
+| Android boot wrapper | Passed (dummy ramdisk only) | Artifact `archneo-ayaneo-pocket-s-2k-c51aabe928b731370450c5f096c1fedd16311c29` |
+| Complete image assembly | Not tested | Pending first full-image workflow |
 | ABL prerequisite | Not recorded | Working ROCKNIX-ABL version required |
 | ROCKNIX baseline | Not captured | Pending |
 | ABL boot | Not tested | Pending |

@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+marker="/var/lib/archneo/credentials-set"
+[[ ! -e "$marker" ]] || exit 0
+
+printf '\nArchneo first boot\n'
+printf 'Create passwords for the local administrator accounts.\n\n'
+
+until passwd root; do
+  printf 'The root password was not changed; please try again.\n' >&2
+done
+
+until passwd deck; do
+  printf 'The deck password was not changed; please try again.\n' >&2
+done
+
+install -d -m 0755 /var/lib/archneo
+touch "$marker"
+printf '\nCredentials saved. The normal login prompt will start now.\n'

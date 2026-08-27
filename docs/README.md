@@ -10,10 +10,12 @@ and known limitations are part of the deliverable.
 - [Bring-up roadmap](roadmap.md)
 - [Building Archneo](building.md)
 - [ROCKNIX-ABL boot contract](architecture/boot-contract.md)
+- [Planned internal-storage installer](architecture/internal-installer.md)
 - [AYANEO Pocket S 2K](devices/ayaneo-pocket-s-2k.md)
 - [AYANEO Pocket EVO](devices/ayaneo-pocket-evo.md)
 - [ADR 0001: bring up the Pocket S 2K first](decisions/0001-pocket-s-2k-first.md)
 - [ADR 0002: treat ROCKNIX-ABL as an external interface](decisions/0002-abl-is-an-external-interface.md)
+- [ADR 0003: ext4, UUID, account, and partition layout](decisions/0003-system-layout.md)
 
 ## Documentation rules
 
@@ -27,6 +29,7 @@ Every device-affecting change must record:
 - relevant licences and attribution.
 
 Unverified procedures must be labelled as such. Initial Archneo procedures
-must operate on removable media and must not include internal-storage writes.
-ABL installation and Android backup/restoration are external prerequisites,
-not Archneo procedures.
+operate on removable media. Internal-storage installation is a later,
+separately gated workflow and cannot be reached from the image builder. ABL
+installation and Android backup/restoration are external prerequisites, not
+Archneo procedures.
