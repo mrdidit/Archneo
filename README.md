@@ -19,9 +19,21 @@ from ROCKNIX and a ROCKNIX-ABL-compatible boot layout.
 
 ## Status
 
-The initial target device and SoC are still being selected. Device-specific
-code and flashing instructions will only be added after the boot chain,
-partition layout, and recovery path have been documented and verified.
+The initial platform is Qualcomm SM8550. Device bring-up will proceed in this
+order:
+
+1. AYANEO Pocket S 2K (`ayaneo-pocket-s-2k`)
+2. AYANEO Pocket EVO (`ayaneo-pocket-evo`)
+
+The similarly named AYANEO Pocket S2 is an SM8650 device and is not one of
+these initial targets. Archneo does not yet produce a bootable image.
+
+See the [documentation index](docs/README.md) and [bring-up roadmap](docs/roadmap.md)
+for the current plan and evidence requirements.
+
+Device-specific code and flashing instructions will only be added after the
+boot chain, partition layout, and recovery path have been documented and
+verified.
 
 ## Upstream projects
 
