@@ -9,6 +9,13 @@ kernel_release="${1:?kernel release is required}"
   exit 1
 }
 
+cleanup_build_agents() {
+  if command -v gpgconf >/dev/null 2>&1; then
+    GNUPGHOME=/etc/pacman.d/gnupg gpgconf --kill all >/dev/null 2>&1 || true
+  fi
+}
+trap cleanup_build_agents EXIT
+
 pacman-key --init
 pacman-key --populate archlinuxarm
 
@@ -18,7 +25,11 @@ if pacman -Qq linux-aarch64 >/dev/null 2>&1; then
   pacman -Rdd --noconfirm linux-aarch64
 fi
 
-pacman -Syu --needed --noconfirm \
+# Pacman 7 uses Landlock/seccomp for its downloader. Those kernel interfaces
+# are not available through qemu-user on the x86 build host, so disable the
+# sandbox for this emulated transaction only. The installed pacman.conf keeps
+# its normal sandbox policy.
+pacman -Syu --disable-sandbox --needed --noconfirm \
   bash \
   e2fsprogs \
   linux-firmware \
@@ -65,3 +76,6 @@ pacman -Scc --noconfirm
 # Let systemd create unique identities and random state on the target.
 : > /etc/machine-id
 find /var/lib/systemd/random-seed -maxdepth 0 -type f -delete 2>/dev/null || true
+
+cleanup_build_agents
+trap - EXIT

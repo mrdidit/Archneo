@@ -117,20 +117,25 @@ the uploaded workflow artifact digest was
 `df44dd26ea9f35b4662d0c8cdfeb07b9b1506c722f8ef3ad32510eb49aa03f72`.
 Hardware remained untested.
 
-The first two full-image attempts, GitHub Actions runs
+The first three full-image attempts, GitHub Actions runs
 [`33071305455`](https://github.com/mrdidit/Archneo/actions/runs/33071305455) and
 [`33074171748`](https://github.com/mrdidit/Archneo/actions/runs/33074171748),
-verified both source archives and the Arch Linux ARM signature, then failed the
-first aarch64 execution preflight. Inspection of the verified archive proved
-that the required ELF interpreter was present. A minimal reproduction then
+then [`33079249905`](https://github.com/mrdidit/Archneo/actions/runs/33079249905),
+all verified both source archives and the Arch Linux ARM signature. The first
+two failed the initial aarch64 execution. Inspection and a minimal reproduction
 showed that syncing the kernel's top-level `lib/modules` overlay replaced
 Arch's `/lib -> usr/lib` compatibility symlink with a directory, making the
-interpreter unreachable. No image was produced in either run.
+interpreter unreachable.
 
 Module installation now copies only the contents below `lib/modules` into
 `/usr/lib/modules`. Before QEMU starts, the builder requires `/lib -> usr/lib`,
 `/bin -> usr/bin`, and an executable aarch64 interpreter. It then runs an
-aarch64 `/bin/true` preflight before Pacman; the replacement run is pending.
+aarch64 `/bin/true` preflight before Pacman. The third run passed all of those
+checks and entered Pacman, where Pacman 7 rejected its downloader because
+Landlock is unavailable through qemu-user. The emulated system-update command
+now uses Pacman's documented `--disable-sandbox` option; the installed
+`pacman.conf` remains unchanged. None of the three runs produced an image, and
+the replacement run is pending.
 
 ## Source and patch policy
 
