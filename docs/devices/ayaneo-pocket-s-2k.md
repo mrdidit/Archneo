@@ -37,7 +37,7 @@ The following evidence is required before changing the status from `untested`:
 | --- | --- | --- |
 | Kernel/DTB compile | Passed | GitHub Actions run [`33063572182`](https://github.com/mrdidit/Archneo/actions/runs/33063572182), commit `c51aabe928b731370450c5f096c1fedd16311c29` |
 | Android boot wrapper | Passed (dummy ramdisk only) | Artifact `archneo-ayaneo-pocket-s-2k-c51aabe928b731370450c5f096c1fedd16311c29` |
-| Complete image assembly | Reached rootfs package update | Runs [`33071305455`](https://github.com/mrdidit/Archneo/actions/runs/33071305455), [`33074171748`](https://github.com/mrdidit/Archneo/actions/runs/33074171748), and [`33079249905`](https://github.com/mrdidit/Archneo/actions/runs/33079249905): usr-merge issue fixed; latest stopped at Pacman Landlock under qemu-user; scoped correction awaiting CI |
+| Complete image assembly | Reached resolved package transaction | Runs [`33071305455`](https://github.com/mrdidit/Archneo/actions/runs/33071305455), [`33074171748`](https://github.com/mrdidit/Archneo/actions/runs/33074171748), [`33079249905`](https://github.com/mrdidit/Archneo/actions/runs/33079249905), and [`33083220681`](https://github.com/mrdidit/Archneo/actions/runs/33083220681): latest stopped when Pacman could not map its cache to a mount point; private rootfs bind-mount correction awaiting CI |
 | ABL prerequisite | Not recorded | Working ROCKNIX-ABL version required |
 | ROCKNIX baseline | Not captured | Pending |
 | ABL boot | Not tested | Pending |

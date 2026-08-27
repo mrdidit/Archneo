@@ -16,6 +16,14 @@ cleanup_build_agents() {
 }
 trap cleanup_build_agents EXIT
 
+cache_mount="$(findmnt -nro TARGET --target /var/cache/pacman/pkg || true)"
+[[ -n "$cache_mount" ]] || {
+  printf 'archneo: pacman cache has no chroot-visible mount point\n' >&2
+  exit 1
+}
+printf 'archneo: pacman cache mount: %s\n' "$cache_mount"
+df -Pk /var/cache/pacman/pkg
+
 pacman-key --init
 pacman-key --populate archlinuxarm
 

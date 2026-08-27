@@ -117,15 +117,16 @@ the uploaded workflow artifact digest was
 `df44dd26ea9f35b4662d0c8cdfeb07b9b1506c722f8ef3ad32510eb49aa03f72`.
 Hardware remained untested.
 
-The first three full-image attempts, GitHub Actions runs
+The first four full-image attempts, GitHub Actions runs
 [`33071305455`](https://github.com/mrdidit/Archneo/actions/runs/33071305455) and
 [`33074171748`](https://github.com/mrdidit/Archneo/actions/runs/33074171748),
 then [`33079249905`](https://github.com/mrdidit/Archneo/actions/runs/33079249905),
-all verified both source archives and the Arch Linux ARM signature. The first
-two failed the initial aarch64 execution. Inspection and a minimal reproduction
-showed that syncing the kernel's top-level `lib/modules` overlay replaced
-Arch's `/lib -> usr/lib` compatibility symlink with a directory, making the
-interpreter unreachable.
+and [`33083220681`](https://github.com/mrdidit/Archneo/actions/runs/33083220681),
+all verified both source archives and the Arch Linux ARM signature. No image
+was produced. The first two failed the initial aarch64 execution. Inspection
+and a minimal reproduction showed that syncing the kernel's top-level
+`lib/modules` overlay replaced Arch's `/lib -> usr/lib` compatibility symlink
+with a directory, making the interpreter unreachable.
 
 Module installation now copies only the contents below `lib/modules` into
 `/usr/lib/modules`. Before QEMU starts, the builder requires `/lib -> usr/lib`,
@@ -134,8 +135,12 @@ aarch64 `/bin/true` preflight before Pacman. The third run passed all of those
 checks and entered Pacman, where Pacman 7 rejected its downloader because
 Landlock is unavailable through qemu-user. The emulated system-update command
 now uses Pacman's documented `--disable-sandbox` option; the installed
-`pacman.conf` remains unchanged. None of the three runs produced an image, and
-the replacement run is pending.
+`pacman.conf` remains unchanged. The fourth run passed that boundary, resolved
+the complete package transaction, then Pacman's `CheckSpace` safety check could
+not map `/var/cache/pacman/pkg` to a mount point because the chroot root was a
+plain host directory. The builder now makes the rootfs a private self-bind
+mount and verifies the cache mount/free-space view before Pacman. The
+replacement run is pending.
 
 ## Source and patch policy
 

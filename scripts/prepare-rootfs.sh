@@ -91,13 +91,21 @@ install -m 0644 /etc/resolv.conf "${rootfs}/etc/resolv.conf"
 mounted_dev=0
 mounted_proc=0
 mounted_sys=0
+mounted_rootfs=0
 cleanup_mounts() {
   if (( mounted_sys )); then umount -R "${rootfs}/sys" || true; fi
   if (( mounted_proc )); then umount "${rootfs}/proc" || true; fi
   if (( mounted_dev )); then umount -R "${rootfs}/dev" || true; fi
+  if (( mounted_rootfs )); then umount "$rootfs" || true; fi
 }
 trap cleanup_mounts EXIT
 
+# Give the chroot a real mount boundary. Pacman's CheckSpace implementation
+# resolves cache paths through /proc/self/mountinfo; a plain directory chroot
+# has no chroot-visible mount point to associate with /var/cache/pacman/pkg.
+mount --bind "$rootfs" "$rootfs"
+mounted_rootfs=1
+mount --make-private "$rootfs"
 mount --rbind /dev "${rootfs}/dev"
 mount --make-rslave "${rootfs}/dev"
 mounted_dev=1
@@ -135,6 +143,7 @@ cleanup_mounts
 mounted_dev=0
 mounted_proc=0
 mounted_sys=0
+mounted_rootfs=0
 trap - EXIT
 
 find "${rootfs}/root/archneo-configure-rootfs.sh" -maxdepth 0 -type f -delete
