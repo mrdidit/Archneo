@@ -1,5 +1,6 @@
-# Archneo starts with the pinned ROCKNIX SM8550 configuration. These are the
-# intentional userspace/root-filesystem deltas applied by prepare-kernel.sh.
+# Archneo starts with the pinned ROCKNIX SM8550 configuration. The compile-smoke
+# build has no built-in initramfs; complete images replace this setting with the
+# generated Archneo .cpio.gz archive before the final Image relink.
 CONFIG_INITRAMFS_SOURCE=""
 CONFIG_DEFAULT_HOSTNAME="archneo"
 CONFIG_LOCALVERSION="-archneo"

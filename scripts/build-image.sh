@@ -10,7 +10,7 @@ archneo_load_platform
 
 [[ "$(id -u)" == "0" ]] || archneo_die "disk-image construction must run as root"
 
-for command in blkid e2fsck fsck.vfat gzip losetup mkfs.ext4 mkfs.vfat \
+for command in blkid e2fsck fsck.vfat grep gzip losetup mkfs.ext4 mkfs.vfat \
   mount mountpoint rsync sgdisk sfdisk sha256sum sync truncate udevadm umount; do
   archneo_need_command "$command"
 done
@@ -25,11 +25,17 @@ mount_boot="${ARCHNEO_BUILD_DIR}/mounts/${device}/boot"
 raw_image="${image_work_dir}/Archneo-${device}.img"
 compressed_image="${device_out}/Archneo-${device}.img.gz"
 compressed_partial="${compressed_image}.part"
+initramfs="${rootfs}/boot/initramfs-linux-archneo.cpio.gz"
 
 "${SCRIPT_DIR}/prepare-rootfs.sh"
 [[ -s "${device_out}/KERNEL" ]] || archneo_die "bootable KERNEL payload is missing"
-[[ -s "${rootfs}/boot/initramfs-linux-archneo.img" ]] || \
-  archneo_die "Archneo initramfs is missing"
+[[ -s "$initramfs" ]] || archneo_die "Archneo initramfs is missing"
+initramfs_sha256="$(sha256sum -- "$initramfs" | awk '{print $1}')"
+grep -Fxq 'initramfs_delivery=kernel-built-in' "${device_out}/build-manifest.txt" || \
+  archneo_die "KERNEL manifest does not record a built-in initramfs"
+grep -Fxq "builtin_initramfs_sha256=${initramfs_sha256}" \
+  "${device_out}/build-manifest.txt" || \
+  archneo_die "KERNEL manifest initramfs hash does not match the rootfs archive"
 
 mkdir -p -- "$image_work_dir" "$device_out" "$mount_root" "$mount_home" "$mount_boot"
 for mount_dir in "$mount_boot" "$mount_home" "$mount_root"; do
@@ -127,8 +133,8 @@ rsync -aHAX --numeric-ids "${rootfs}/home/." "$mount_home/"
 install -m 0644 "${device_out}/KERNEL" "$mount_boot/KERNEL"
 install -m 0644 "${device_out}/KERNEL.sha256" "$mount_boot/KERNEL.sha256"
 install -m 0644 "${device_out}/build-manifest.txt" "$mount_boot/build-manifest.txt"
-install -m 0644 "${rootfs}/boot/initramfs-linux-archneo.img" \
-  "$mount_boot/initramfs-linux-archneo.img"
+install -m 0644 "$initramfs" \
+  "$mount_boot/initramfs-linux-archneo.cpio.gz"
 sync
 
 umount "$mount_boot"
@@ -163,6 +169,8 @@ trap - EXIT
   printf 'root_uuid=%s\n' "$ARCHNEO_ROOT_FS_UUID"
   printf 'home_seed_size_mib=%s\n' "$ARCHNEO_HOME_SEED_SIZE_MIB"
   printf 'home_uuid=%s\n' "$ARCHNEO_HOME_FS_UUID"
+  printf 'initramfs_delivery=kernel-built-in\n'
+  printf 'initramfs_sha256=%s\n' "$initramfs_sha256"
   printf 'rootfs_sha256=%s\n' "$(sha256sum -- "${ARCHNEO_CACHE_DIR}/downloads/ArchLinuxARM-aarch64-latest.tar.gz" | awk '{print $1}')"
   printf 'kernel_sha256=%s\n' "$(sha256sum -- "${device_out}/KERNEL" | awk '{print $1}')"
 } > "${device_out}/image-manifest.txt"

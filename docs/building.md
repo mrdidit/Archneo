@@ -75,8 +75,9 @@ The image stage:
 2. installs the custom modules, Arch Linux ARM's version-recorded
    `linux-firmware` package, and checksum-pinned ROCKNIX SM8550 firmware;
 3. updates the rootfs under qemu, removes `alarm`, creates `deck`, and generates
-   the mkinitcpio image;
-4. rebuilds `/KERNEL` with that real initramfs; and
+   the mkinitcpio `.cpio.gz` archive;
+4. relinks Linux with that archive built in, then rebuilds `/KERNEL` with
+   ROCKNIX's literal `dummy` in the Android ramdisk field; and
 5. creates and verifies the FAT32/ext4/ext4 disk image.
 
 The published output is:
@@ -150,7 +151,20 @@ systemd's safety checks to reject paths during package hooks.
 Build-supplied modules, policy files, and firmware are now explicitly owned by
 root, and `/`, `/etc`, and `/usr` ownership is validated before entering the
 chroot. `mkinitcpio` now runs through guest Bash. Files created for `deck` later
-retain UID/GID 1000. The replacement run is pending.
+retain UID/GID 1000. The replacement, GitHub Actions run
+[`33089290964`](https://github.com/mrdidit/Archneo/actions/runs/33089290964),
+completed successfully at commit
+`787ef0d8717b2248c9039f103a60e40144eff779`. Its uploaded artifact digest was
+`459e0e0b0760419a1e259e8923102db3d923c4c963e5195426319dc0c1fcb955`.
+
+The first hardware test wrote that image to removable media and confirmed the
+expected partition labels and UUIDs. ABL appeared to select `/KERNEL`, but the
+Pocket S 2K remained on a black screen and required forced power-off. The root
+filesystem then contained neither systemd journal files nor Archneo first-boot
+markers. That image placed the functional initramfs in the Android boot-image
+ramdisk field, whereas public ROCKNIX builds the real initramfs into Linux and
+uses the literal `dummy` externally. Complete Archneo images now follow that
+ROCKNIX boundary; the replacement hardware result is pending.
 
 ## Source and patch policy
 
@@ -166,10 +180,13 @@ Files ending in `.disabled` are deliberately excluded. The entire SM8550 DTS
 overlay is then copied into the kernel tree, while the packaged payload uses
 only the selected device DTB.
 
-ROCKNIX normally embeds its appliance initramfs. Archneo clears
-`CONFIG_INITRAMFS_SOURCE` and sets its hostname/local version. The complete
-image supplies a separate mkinitcpio ramdisk in the Android boot image so the
-root filesystem can be located by UUID. The kernel deltas are recorded in
+ROCKNIX normally embeds its appliance initramfs. Archneo's canonical
+compile-smoke configuration clears `CONFIG_INITRAMFS_SOURCE` and sets its
+hostname/local version. During complete image assembly, the builder changes
+only the output-tree configuration to name the generated `.cpio.gz` archive
+and relinks `Image`. The Android boot-image ramdisk remains `dummy`, matching
+ROCKNIX, while the built-in archive locates the ext4 root by UUID. The baseline
+kernel deltas are recorded in
 [`config/kernel/archneo-sm8550.fragment`](../config/kernel/archneo-sm8550.fragment).
 
 ## Reproducibility boundary

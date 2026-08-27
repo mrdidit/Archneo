@@ -16,6 +16,7 @@ and known limitations are part of the deliverable.
 - [ADR 0001: bring up the Pocket S 2K first](decisions/0001-pocket-s-2k-first.md)
 - [ADR 0002: treat ROCKNIX-ABL as an external interface](decisions/0002-abl-is-an-external-interface.md)
 - [ADR 0003: ext4, UUID, account, and partition layout](decisions/0003-system-layout.md)
+- [ADR 0004: keep the functional initramfs inside the kernel](decisions/0004-built-in-initramfs.md)
 
 ## Documentation rules
 

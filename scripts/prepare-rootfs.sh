@@ -41,9 +41,8 @@ fi
 if [[ "$existing_schema" == "$ARCHNEO_ROOTFS_SCHEMA:$kernel_release" ]]; then
   archneo_log "using prepared persistent rootfs: ${rootfs}"
   ARCHNEO_DEVICE="$device" \
-  ARCHNEO_PACKAGE_KIND="bootable-image" \
-  ARCHNEO_RAMDISK="${rootfs}/boot/initramfs-linux-archneo.img" \
-    "${SCRIPT_DIR}/package-kernel.sh"
+  ARCHNEO_INITRAMFS="${rootfs}/boot/initramfs-linux-archneo.cpio.gz" \
+    "${SCRIPT_DIR}/embed-initramfs.sh"
   exit 0
 fi
 
@@ -142,7 +141,7 @@ rsync -aHAX --chown=0:0 --exclude='/.archneo-complete' \
 archneo_chroot /bin/bash /usr/bin/mkinitcpio \
   -k "$kernel_release" \
   -c /etc/mkinitcpio.conf.d/archneo.conf \
-  -g /boot/initramfs-linux-archneo.img
+  -g /boot/initramfs-linux-archneo.cpio.gz
 
 cleanup_mounts
 mounted_dev=0
@@ -165,8 +164,7 @@ rootfs_sha="$(sha256sum -- "$rootfs_archive" | awk '{print $1}')"
 printf '%s:%s\n' "$ARCHNEO_ROOTFS_SCHEMA" "$kernel_release" > "${rootfs}/.archneo-complete"
 
 ARCHNEO_DEVICE="$device" \
-ARCHNEO_PACKAGE_KIND="bootable-image" \
-ARCHNEO_RAMDISK="${rootfs}/boot/initramfs-linux-archneo.img" \
-  "${SCRIPT_DIR}/package-kernel.sh"
+ARCHNEO_INITRAMFS="${rootfs}/boot/initramfs-linux-archneo.cpio.gz" \
+  "${SCRIPT_DIR}/embed-initramfs.sh"
 
-archneo_log "prepared rootfs and real initramfs: ${rootfs}"
+archneo_log "prepared rootfs and kernel-built-in initramfs: ${rootfs}"

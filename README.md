@@ -5,10 +5,10 @@ handhelds. It aims to combine an Arch userspace with device support derived
 from ROCKNIX and a ROCKNIX-ABL-compatible boot layout.
 
 > [!WARNING]
-> Archneo is at the research and bring-up stage. It now has kernel preparation
-> and complete removable-image assembly code, but the resulting image has not
-> yet passed its CI assembly run or a hardware boot test. It does not install
-> or modify ABL.
+> Archneo is at the research and bring-up stage. Complete Pocket S 2K image
+> assembly passes CI, but the first hardware image produced a sustained black
+> screen and no evidence that systemd started. It does not install or modify
+> ABL.
 
 ## Goals
 
@@ -28,8 +28,10 @@ order:
 
 The similarly named AYANEO Pocket S2 is an SM8650 device and is not one of
 these initial targets. Source preparation and a compile-smoke `KERNEL` payload
-have passed CI. Rootfs, real-initramfs, firmware, and complete removable-image
-assembly are implemented and await their first CI run and hardware test.
+have passed CI. Rootfs, firmware, and complete removable-image assembly also
+pass CI. The first hardware test exposed an unproven external-initramfs
+assumption; the next image restores ROCKNIX's built-in-initramfs packaging for
+another controlled test.
 
 See the [documentation index](docs/README.md) and [bring-up roadmap](docs/roadmap.md)
 for the current plan and evidence requirements.

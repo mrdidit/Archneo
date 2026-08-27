@@ -36,9 +36,10 @@ device_out="${ARCHNEO_BUILD_DIR}/artifacts/${device}"
 
 mkdir -p -- "$kernel_build_dir" "$device_out"
 
-if [[ ! -f "${kernel_build_dir}/.config" ]]; then
-  cp -- "${source_dir}/.archneo.config" "${kernel_build_dir}/.config"
-fi
+# A previous complete-image build may have linked an initramfs into this output
+# tree. Always restore the canonical initramfs-free configuration before making
+# the independently useful compile-smoke payload.
+cp -- "${source_dir}/.archneo.config" "${kernel_build_dir}/.config"
 
 make_args=(
   -C "$source_dir"

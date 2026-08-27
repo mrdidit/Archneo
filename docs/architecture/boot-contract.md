@@ -68,18 +68,27 @@ Arch installation:
 | DTB in payload | Pocket S 2K only | make the first artifact unambiguous |
 | Root partition | 30 GiB ext4 | normal writable Arch root |
 | Home partition | ext4 seed, expanded to remaining media | independent user data without Btrfs |
-| Kernel-built-in initramfs | none | keep rootfs tooling out of the kernel binary |
-| Android boot-image ramdisk | Archneo mkinitcpio image | discover a filesystem UUID before mounting root |
+| Kernel-built-in initramfs | Archneo mkinitcpio `.cpio.gz` | retain ROCKNIX's proven functional-initramfs location |
+| Android boot-image ramdisk | literal five-byte `dummy` | avoid depending on private ABL to forward an external initramfs |
 | Boot command line | `boot=LABEL=ROCKNIX` | preserve the ABL-facing label convention |
 | Root command line | `disk=UUID=… root=UUID=… rootfstype=ext4 rw rootwait` | avoid unstable device paths and partition identifiers |
 | Console | `ttyMSM0` and `tty0`, verbose logging | early bring-up evidence |
 
 The compile-smoke artifact deliberately retains ROCKNIX's five-byte `dummy`
-ramdisk to validate compilation and Android-container packaging. It is not the
-bootable Archneo artifact. Complete images replace it with an initramfs using
-mkinitcpio's `udev`, `block`, `filesystems`, and `fsck` hooks. The kernel still
-builds the essential Qualcomm SDHCI/MMC and ext4 paths in, but early userspace
-is responsible for resolving `root=UUID=…`.
+ramdisk and an empty built-in initramfs to validate compilation and
+Android-container packaging. It is not the bootable Archneo artifact. Complete
+images relink the kernel with an Archneo mkinitcpio archive using the `udev`,
+`block`, `filesystems`, and `fsck` hooks, while leaving the Android boot-image
+ramdisk as `dummy`. The kernel still builds the essential Qualcomm SDHCI/MMC
+and ext4 paths in, but built-in early userspace is responsible for resolving
+`root=UUID=…`.
+
+The first hardware image instead placed that archive in the Android ramdisk
+field. ABL appeared to select the payload, but the device remained on a black
+screen and the root filesystem contained no journal or first-boot markers
+after forced power-off. That test did not prove that private LinuxLoader passes
+an external ramdisk to Linux. [ADR 0004](../decisions/0004-built-in-initramfs.md)
+therefore restores the public ROCKNIX packaging boundary for the next test.
 
 The removable image uses stable, machine-readable filesystem UUIDs from
 [`config/platform.env`](../../config/platform.env). `/etc/fstab` names `/boot`,

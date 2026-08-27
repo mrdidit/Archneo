@@ -5,7 +5,7 @@
 - Archneo identifier: `ayaneo-pocket-s-2k`
 - SoC/platform: Qualcomm SM8550
 - Bring-up priority: first
-- Current Archneo status: kernel compile/package passed; full image and hardware untested
+- Current Archneo status: image assembly passed; first hardware image black-screened before any recorded systemd activity
 
 This page describes the original AYANEO Pocket S with the 2K display. It does
 not describe the AYANEO Pocket S2, which uses SM8650.
@@ -37,12 +37,13 @@ The following evidence is required before changing the status from `untested`:
 | --- | --- | --- |
 | Kernel/DTB compile | Passed | GitHub Actions run [`33063572182`](https://github.com/mrdidit/Archneo/actions/runs/33063572182), commit `c51aabe928b731370450c5f096c1fedd16311c29` |
 | Android boot wrapper | Passed (dummy ramdisk only) | Artifact `archneo-ayaneo-pocket-s-2k-c51aabe928b731370450c5f096c1fedd16311c29` |
-| Complete image assembly | Rootfs configured; initramfs invocation failed | Runs [`33071305455`](https://github.com/mrdidit/Archneo/actions/runs/33071305455), [`33074171748`](https://github.com/mrdidit/Archneo/actions/runs/33074171748), [`33079249905`](https://github.com/mrdidit/Archneo/actions/runs/33079249905), [`33083220681`](https://github.com/mrdidit/Archneo/actions/runs/33083220681), and [`33086444548`](https://github.com/mrdidit/Archneo/actions/runs/33086444548): latest completed accounts/services, then exposed build-overlay ownership and script-invocation errors; corrections awaiting CI |
+| Complete image assembly | Passed | GitHub Actions run [`33089290964`](https://github.com/mrdidit/Archneo/actions/runs/33089290964), commit `787ef0d8717b2248c9039f103a60e40144eff779`, artifact digest `459e0e0b0760419a1e259e8923102db3d923c4c963e5195426319dc0c1fcb955` |
 | ABL prerequisite | Not recorded | Working ROCKNIX-ABL version required |
 | ROCKNIX baseline | Not captured | Pending |
-| ABL boot | Not tested | Pending |
-| Diagnostic console | Not tested | Pending |
-| Display/backlight | Not tested | Pending |
+| ABL boot | Payload selected; kernel entry not proven | First removable-media test appeared to load `/KERNEL`; exact ABL version still required |
+| Root/userspace | Failed to produce evidence | Correct UUID filesystems were present after forced power-off, but `/var/log/journal` had no files, `/var/lib/archneo` had no markers, and the home filesystem remained at its 1 GiB seed capacity |
+| Diagnostic console | Failed | No visible console; UART not captured |
+| Display/backlight | Black screen | Whether the panel backlight was electrically on was not recorded |
 | Touchscreen | Not tested | Pending |
 | Storage/USB | Not tested | Pending |
 | Controls/rumble | Not tested | Pending |
@@ -54,3 +55,21 @@ The following evidence is required before changing the status from `untested`:
 
 Test logs must identify the image build, source revisions, device hardware
 revision, test procedure, and observed result.
+
+### First hardware attempt
+
+- Date: 2026-08-27
+- Image build: GitHub Actions run `33089290964`, commit `787ef0d`
+- Write method: balenaEtcher to removable media
+- Verified media state: GPT plus `ROCKNIX`, `ARCHNEO_ROOT`, and
+  `ARCHNEO_HOME`; expected filesystem UUIDs matched the build profile
+- Observation: ABL appeared to load the payload, the display showed no usable
+  output, the device remained running, and shutdown required a hard power-off
+- Post-test evidence: no persistent journal files and no Archneo first-boot
+  marker; `/home` expansion had not completed
+- Unknowns still to record: hardware revision, ROCKNIX-ABL version, whether
+  the backlight was lit, and a known-good ROCKNIX comparison on the same unit
+
+This result does not establish kernel entry. The next image changes only the
+initramfs delivery: Archneo's archive is built into Linux and the Android
+ramdisk returns to ROCKNIX's literal `dummy`.

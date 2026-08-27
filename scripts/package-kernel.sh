@@ -37,6 +37,11 @@ dtb="${kernel_build_dir}/arch/arm64/boot/dts/qcom/${dtb_name}"
 kernel_gz="${device_out}/kernel.gz"
 ramdisk="${device_out}/ramdisk"
 kernel_payload="${device_out}/KERNEL"
+builtin_initramfs="${ARCHNEO_BUILTIN_INITRAMFS:-}"
+
+if [[ "$package_kind" == "bootable-image" && -z "$builtin_initramfs" ]]; then
+  archneo_die "bootable-image packaging requires a kernel-built-in initramfs"
+fi
 
 [[ -f "$image" ]] || archneo_die "kernel Image was not built"
 [[ -f "$dtb" ]] || archneo_die "device tree was not built: ${dtb}"
@@ -54,15 +59,24 @@ fi
 gzip -9 -n -c -- "$image" > "$kernel_gz"
 cat -- "$dtb" >> "$kernel_gz"
 
-if [[ -n "${ARCHNEO_RAMDISK:-}" ]]; then
-  [[ -s "$ARCHNEO_RAMDISK" ]] || archneo_die "initramfs is missing or empty: ${ARCHNEO_RAMDISK}"
-  cp -- "$ARCHNEO_RAMDISK" "$ramdisk"
-  ramdisk_kind="archneo-initramfs"
+if [[ -n "$builtin_initramfs" ]]; then
+  [[ -s "$builtin_initramfs" ]] || \
+    archneo_die "built-in initramfs is missing or empty: ${builtin_initramfs}"
+  [[ "$builtin_initramfs" == *.cpio.gz ]] || \
+    archneo_die "built-in initramfs must use the .cpio.gz suffix"
+  # Match ROCKNIX's proven ABL container: the functional initramfs is linked
+  # into Image and the Android boot-image ramdisk remains the literal dummy.
+  printf 'dummy' > "$ramdisk"
+  ramdisk_kind="rocknix-dummy"
+  initramfs_delivery="kernel-built-in"
+  builtin_initramfs_sha256="$(sha256sum -- "$builtin_initramfs" | awk '{print $1}')"
 else
   # This matches public ROCKNIX packaging and is useful only as a compile and
   # ABL-container smoke artifact. It cannot discover Archneo's UUID root.
   printf 'dummy' > "$ramdisk"
   ramdisk_kind="rocknix-dummy"
+  initramfs_delivery="none"
+  builtin_initramfs_sha256="none"
 fi
 
 cmdline="boot=LABEL=${ROCKNIX_ABL_BOOT_LABEL} disk=UUID=${ARCHNEO_ROOT_FS_UUID} root=UUID=${ARCHNEO_ROOT_FS_UUID} rootfstype=ext4 rw rootwait console=ttyMSM0,115200n8 console=tty0 loglevel=7 ignore_loglevel allow_mismatched_32bit_el0 fw_devlink.strict=1 pcie_ports=compat irqaffinity=0-2 cgroup.memory=nokmem,nosocket nosoftlockup usbcore.interrupt_interval_override=045e:028e:2"
@@ -90,6 +104,8 @@ python3 "${mkbootimg_dir}/mkbootimg.py" \
   printf 'package_kind=%s\n' "$package_kind"
   printf 'ramdisk_kind=%s\n' "$ramdisk_kind"
   printf 'ramdisk_sha256=%s\n' "$(sha256sum -- "$ramdisk" | awk '{print $1}')"
+  printf 'initramfs_delivery=%s\n' "$initramfs_delivery"
+  printf 'builtin_initramfs_sha256=%s\n' "$builtin_initramfs_sha256"
   printf 'dtb=%s\n' "$dtb_name"
   printf 'linux_version=%s\n' "$LINUX_VERSION"
   printf 'linux_sha256=%s\n' "$LINUX_SHA256"
