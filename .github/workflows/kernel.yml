@@ -1,0 +1,66 @@
+name: Build Pocket S 2K kernel
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/kernel.yml"
+      - "config/**"
+      - "scripts/**"
+      - "Makefile"
+  pull_request:
+    paths:
+      - ".github/workflows/kernel.yml"
+      - "config/**"
+      - "scripts/**"
+      - "Makefile"
+
+permissions:
+  contents: read
+
+jobs:
+  pocket-s-2k:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+
+    steps:
+      - name: Check out Archneo
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Verify repository metadata
+        run: make verify
+
+      - name: Install kernel build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes \
+            bc \
+            bison \
+            build-essential \
+            curl \
+            dwarves \
+            flex \
+            gcc-aarch64-linux-gnu \
+            git \
+            kmod \
+            libelf-dev \
+            libncurses-dev \
+            libssl-dev \
+            patch \
+            python3 \
+            xz-utils
+
+      - name: Build Pocket S 2K ABL payload
+        env:
+          ARCHNEO_BUILD_DIR: ${{ github.workspace }}/.ci-build
+        run: make kernel
+
+      - name: Upload Pocket S 2K payload and manifest
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: archneo-ayaneo-pocket-s-2k-${{ github.sha }}
+          path: out/ayaneo-pocket-s-2k/
+          if-no-files-found: error
+          retention-days: 14

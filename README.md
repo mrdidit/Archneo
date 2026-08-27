@@ -5,9 +5,9 @@ handhelds. It aims to combine an Arch userspace with device support derived
 from ROCKNIX and a ROCKNIX-ABL-compatible boot layout.
 
 > [!WARNING]
-> Archneo is at the research and bring-up stage. It does not yet produce a
-> bootable image. Do not flash bootloader components from this repository to a
-> device.
+> Archneo is at the research and bring-up stage. It now has kernel preparation
+> and packaging code, but does not yet produce a complete bootable image. It
+> does not install or modify ABL.
 
 ## Goals
 
@@ -15,7 +15,7 @@ from ROCKNIX and a ROCKNIX-ABL-compatible boot layout.
 - Reuse the appropriate upstream and ROCKNIX kernel device support.
 - Package the kernel, device trees, modules, and firmware needed per device.
 - Produce images that follow the ROCKNIX-ABL boot contract.
-- Document backup, recovery, installation, and uninstallation procedures.
+- Document build, installation, update, and hardware-validation procedures.
 
 ## Status
 
@@ -26,14 +26,27 @@ order:
 2. AYANEO Pocket EVO (`ayaneo-pocket-evo`)
 
 The similarly named AYANEO Pocket S2 is an SM8650 device and is not one of
-these initial targets. Archneo does not yet produce a bootable image.
+these initial targets. Source preparation and `KERNEL` payload packaging are
+implemented; rootfs and full removable-image construction are next.
 
 See the [documentation index](docs/README.md) and [bring-up roadmap](docs/roadmap.md)
 for the current plan and evidence requirements.
 
-Device-specific code and flashing instructions will only be added after the
-boot chain, partition layout, and recovery path have been documented and
-verified.
+Initial work assumes a functioning ROCKNIX-ABL installation and writes only
+removable media. Installing ABL and backing up or restoring Android are outside
+Archneo's scope. See the [boot contract](docs/architecture/boot-contract.md)
+before producing test media.
+
+## Build entry points
+
+```sh
+make verify
+make prepare-kernel
+make kernel
+```
+
+See [building Archneo](docs/building.md) for host dependencies, outputs, and
+the current reproducibility boundary.
 
 ## Upstream projects
 

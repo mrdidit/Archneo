@@ -1,0 +1,6 @@
+# Archneo starts with the pinned ROCKNIX SM8550 configuration. These are the
+# intentional userspace/root-filesystem deltas applied by prepare-kernel.sh.
+CONFIG_INITRAMFS_SOURCE=""
+CONFIG_DEFAULT_HOSTNAME="archneo"
+CONFIG_LOCALVERSION="-archneo"
+# CONFIG_LOCALVERSION_AUTO is not set

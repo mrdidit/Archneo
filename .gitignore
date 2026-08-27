@@ -1,0 +1,9 @@
+/.cache/
+/.ci-build/
+/build/
+/out/
+
+*.img
+*.img.gz
+*.tar.gz
+*.tar.xz

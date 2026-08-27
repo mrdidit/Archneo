@@ -20,6 +20,7 @@ The initial hardware description will be derived from ROCKNIX's
 Source:
 [ROCKNIX Pocket EVO device tree](https://github.com/ROCKNIX/distribution/blob/13e18947d2d41b17015f5df18405adefc4dfb2f5/projects/ROCKNIX/devices/SM8550/linux/dts/qcom/qcs8550-ayaneo-pocketevo.dts)
 
-The pinned revision above is an investigation baseline, not yet Archneo's
-selected kernel revision. A complete hardware test matrix will be added before
-the device is described as supported.
+This revision is the shared SM8550 source baseline. EVO payload selection is
+implemented for development, but the Pocket S 2K remains the only active
+bring-up target. A complete independent hardware test matrix will be added
+before the EVO is described as supported.

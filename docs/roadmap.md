@@ -14,16 +14,22 @@ permits. Device-tree and hardware-specific configuration remain separate.
 AYANEO Pocket S2 support is out of scope for this milestone. Despite its
 similar name, it is an SM8650 device.
 
+Current implementation phase: reproducible kernel input preparation and
+Pocket S 2K payload packaging. Full rootfs and disk-image assembly are next.
+
 ## Phases
 
-### 0. Preserve a known-good baseline
+### 0. Establish bring-up prerequisites
 
 - Record exact device variants and hardware revisions.
-- Record the installed Android, firmware, and bootloader versions.
-- Back up all boot-critical data before modifying persistent storage.
-- Prove a recovery route and retain a known-working ROCKNIX image.
+- Require an already-installed, working ROCKNIX-ABL and record its version.
+- Retain a known-working ROCKNIX removable image as the boot-contract baseline.
+- Keep all initial Archneo writes confined to removable media.
 - Capture the partition layout, boot logs, device tree, loaded modules,
   firmware requests, and hardware inventory from a working system.
+
+Installing ABL and backing up or restoring Android are outside Archneo's
+scope.
 
 ### 1. Specify the boot contract
 
@@ -69,12 +75,13 @@ similar name, it is an SM8650 device.
 
 - Build versioned, checksummed removable-media images.
 - Publish build manifests and release notes.
-- Document installation, update, rollback, and recovery.
-- Consider internal installation only after removable-media recovery is proven.
+- Document removable-media installation, update, and rollback.
+- Treat internal installation as a separate future project, not part of the
+  initial milestone.
 
 ## Definition of supported
 
-A device is supported only when the image is reproducible, the boot and
-recovery procedures are tested, the hardware matrix is published, and known
+A device is supported only when the image is reproducible, removable-media
+boot and rollback are tested, the hardware matrix is published, and known
 limitations are recorded. A one-off successful boot is bring-up evidence, not
 support status.
