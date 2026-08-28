@@ -1,13 +1,16 @@
-# Pocket S 2K white-screen diagnostic image
+# Pocket S 2K black-screen diagnostic image
 
 ## Purpose
 
-The second reported Pocket S 2K observation changed from a black screen to a
-white screen with a vibration during startup. The exact image identity and
-post-test filesystem evidence remain to be recorded. A white panel establishes
-neither Linux entry nor successful display initialization: ABL may have left
-the panel powered without valid DSI scanout, and the vibration may originate
-before Linux.
+The reported Pocket S 2K symptom is a black display with a vibration during
+startup. No white screen was observed, and no Linux console or panic output was
+visible. The exact image identity and post-test filesystem evidence remain to
+be recorded.
+
+Power-on and vibration establish neither Linux entry nor successful display
+initialization because both may originate in ABL or earlier firmware. Likewise,
+a black panel cannot distinguish an early boot failure from a working Linux
+system whose DRM, DSI, panel, backlight, or framebuffer-console path failed.
 
 This diagnostic image keeps the accepted ROCKNIX device tree and built-in
 initramfs arrangement unchanged. It adds only observability:
@@ -26,11 +29,11 @@ It does not include the unverified dummy panel-regulator patch from the
    and ROCKNIX-ABL version.
 2. Write the diagnostic image to removable media and boot it through the
    existing ROCKNIX-ABL installation.
-3. Record when vibration and each visible display change occurs.
+3. Record the timing of vibration and any display or backlight change.
 4. Leave the device powered for at least 75 seconds, even if the panel remains
-   white, then force power-off only if normal shutdown remains unavailable.
-5. Return the card to the build workstation and mount `ARCHNEO_ROOT` read-only
-   if practical.
+   black, then force power-off only if normal shutdown remains unavailable.
+5. Return the card to a Linux workstation and mount `ARCHNEO_ROOT` read-only if
+   practical.
 
 ## Recovering evidence
 
@@ -49,6 +52,7 @@ was mounted read-write and the capture service started. Each boot receives a
 directory named with its kernel boot ID. The latest available snapshot should
 contain the most complete DRM/DSI failure evidence.
 
-If neither the marker nor a persistent journal exists, the failure remains
-before this systemd service and must be diagnosed through the configured
-`ttyMSM0` UART or a later initramfs-level capture mechanism.
+If the marker and persistent journal are both absent, the evidence does not
+support treating this as a display-only failure. Diagnosis must move earlier,
+through the configured `ttyMSM0` UART or a later initramfs-level capture
+mechanism.

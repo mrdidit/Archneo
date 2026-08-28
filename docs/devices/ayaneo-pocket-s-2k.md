@@ -5,9 +5,9 @@
 - Archneo identifier: `ayaneo-pocket-s-2k`
 - SoC/platform: Qualcomm SM8550
 - Bring-up priority: first
-- Current Archneo status: image assembly passed; the latest reported hardware
-  attempt showed a white screen and startup vibration, but Linux entry remains
-  unproven pending filesystem evidence
+- Current Archneo status: image assembly passed; the device powers on and
+  vibrates but its display remains black with no visible Linux console, while
+  Linux entry remains unproven pending filesystem evidence
 
 This page describes the original AYANEO Pocket S with the 2K display. It does
 not describe the AYANEO Pocket S2, which uses SM8650.
@@ -48,7 +48,7 @@ The following evidence is required before changing the status from `untested`:
 | Display/backlight | Black screen | Whether the panel backlight was electrically on was not recorded |
 | Touchscreen | Not tested | Pending |
 | Storage/USB | Not tested | Pending |
-| Controls/rumble | Not tested | Pending |
+| Controls/rumble | Startup vibration observed | Source of vibration not yet attributed to ABL, firmware, or Linux |
 | GPU | Not tested | Pending |
 | Audio | Not tested | Pending |
 | Wi-Fi/Bluetooth | Not tested | Pending |
@@ -76,14 +76,16 @@ This result does not establish kernel entry. The next image changes only the
 initramfs delivery: Archneo's archive is built into Linux and the Android
 ramdisk returns to ROCKNIX's literal `dummy`.
 
-### Second reported hardware observation
+### Clarification of the visible symptom
 
 - Date reported: 2026-08-28
 - Image build: pending identification
-- Observation: white screen with a vibration during startup
+- Observation: the display remains black, with no visible console or kernel
+  panic output; a vibration occurs during startup
 - Post-test evidence: pending
-- Interpretation: neither symptom proves Linux entry; the powered panel may
-  lack valid DSI scanout, and the vibration may originate in ABL or firmware
+- Interpretation: the display path is the primary visible symptom, but the
+  vibration alone does not prove Linux entry because it may originate in ABL
+  or firmware
 
 The follow-up diagnostic image and evidence-recovery procedure are documented
-in [Pocket S 2K white-screen diagnostics](../diagnostics/pocket-s-2k-white-screen.md).
+in [Pocket S 2K black-screen diagnostics](../diagnostics/pocket-s-2k-display.md).
