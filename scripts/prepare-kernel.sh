@@ -70,6 +70,15 @@ apply_patch_directory "${rocknix_dir}/projects/ROCKNIX/packages/linux/patches/ma
 apply_patch_directory "${rocknix_dir}/projects/ROCKNIX/packages/linux/patches/${LINUX_VERSION}"
 apply_patch_directory "${rocknix_dir}/projects/ROCKNIX/devices/SM8550/patches/linux"
 
+local_patch_directory="${ARCHNEO_PROJECT_ROOT}/config/kernel/patches"
+if [[ -d "$local_patch_directory" ]]; then
+  while IFS= read -r -d '' patch_file; do
+    archneo_log "applying local patch ${patch_file#"${ARCHNEO_PROJECT_ROOT}/"}"
+    patch --batch --forward -d "$work_dir" -p1 < "$patch_file"
+    patch_count=$((patch_count + 1))
+  done < <(find "$local_patch_directory" -maxdepth 1 -type f -name '*.patch' -print0 | LC_ALL=C sort -z)
+fi
+
 [[ "$patch_count" -gt 0 ]] || archneo_die "no ROCKNIX patches were selected"
 
 dts_source="${rocknix_dir}/projects/ROCKNIX/devices/SM8550/linux/dts"
