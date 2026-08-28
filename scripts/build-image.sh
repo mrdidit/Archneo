@@ -10,7 +10,7 @@ archneo_load_platform
 
 [[ "$(id -u)" == "0" ]] || archneo_die "disk-image construction must run as root"
 
-for command in blkid e2fsck fsck.vfat grep gzip losetup mkfs.ext4 mkfs.vfat \
+for command in blkid e2fsck fsck.vfat grep gzip losetup md5sum mkfs.ext4 mkfs.vfat \
   mount mountpoint rsync sgdisk sfdisk sha256sum sync truncate udevadm umount; do
   archneo_need_command "$command"
 done
@@ -25,17 +25,21 @@ mount_boot="${ARCHNEO_BUILD_DIR}/mounts/${device}/boot"
 raw_image="${image_work_dir}/Archneo-${device}.img"
 compressed_image="${device_out}/Archneo-${device}.img.gz"
 compressed_partial="${compressed_image}.part"
-initramfs="${rootfs}/boot/initramfs-linux-archneo.cpio.gz"
 
 "${SCRIPT_DIR}/prepare-rootfs.sh"
 [[ -s "${device_out}/KERNEL" ]] || archneo_die "bootable KERNEL payload is missing"
-[[ -s "$initramfs" ]] || archneo_die "Archneo initramfs is missing"
-initramfs_sha256="$(sha256sum -- "$initramfs" | awk '{print $1}')"
-grep -Fxq 'initramfs_delivery=kernel-built-in' "${device_out}/build-manifest.txt" || \
-  archneo_die "KERNEL manifest does not record a built-in initramfs"
-grep -Fxq "builtin_initramfs_sha256=${initramfs_sha256}" \
+[[ -s "${device_out}/KERNEL.md5" ]] || archneo_die "ABL KERNEL.md5 is missing"
+[[ -s "${device_out}/KERNEL.sha256" ]] || archneo_die "KERNEL.sha256 is missing"
+(
+  cd "$device_out"
+  md5sum --check KERNEL.md5
+  sha256sum --check KERNEL.sha256
+)
+grep -Fxq 'initramfs_delivery=none-direct-root' "${device_out}/build-manifest.txt" || \
+  archneo_die "KERNEL manifest does not record the direct-root boot path"
+grep -Fq "cmdline=root=PARTUUID=${ARCHNEO_ROOT_PART_GUID} rootfstype=ext4 " \
   "${device_out}/build-manifest.txt" || \
-  archneo_die "KERNEL manifest initramfs hash does not match the rootfs archive"
+  archneo_die "KERNEL manifest does not use the root partition UUID"
 
 mkdir -p -- "$image_work_dir" "$device_out" "$mount_root" "$mount_home" "$mount_boot"
 for mount_dir in "$mount_boot" "$mount_home" "$mount_root"; do
@@ -66,7 +70,7 @@ sgdisk --clear \
   --disk-guid="$ARCHNEO_DISK_GUID" \
   --new="1:${ABL_SYSTEM_PART_START_SECTORS}:+${ABL_SYSTEM_PART_SIZE_MIB}M" \
   --typecode=1:0700 \
-  --change-name=1:"$ROCKNIX_ABL_BOOT_LABEL" \
+  --change-name=1:"$ROCKNIX_ABL_BOOT_PARTITION_NAME" \
   --partition-guid=1:"$ARCHNEO_BOOT_PART_GUID" \
   --attributes=1:set:2 \
   --new="2:0:+${ARCHNEO_ROOT_SIZE_MIB}M" \
@@ -100,6 +104,19 @@ for partition in "$boot_partition" "$root_partition" "$home_partition"; do
   [[ -b "$partition" ]] || archneo_die "loop partition did not appear: ${partition}"
 done
 
+boot_partition_info="$(sgdisk --info=1 "$loop_device")"
+grep -Fxq "Partition name: '${ROCKNIX_ABL_BOOT_PARTITION_NAME}'" \
+  <<< "$boot_partition_info" || archneo_die "ABL boot GPT name mismatch"
+grep -Fxq 'Attribute flags: 0000000000000004' <<< "$boot_partition_info" || \
+  archneo_die "ABL boot partition is missing the legacy-boot attribute"
+
+[[ "$(blkid -s PARTUUID -o value "$boot_partition")" == "$ARCHNEO_BOOT_PART_GUID" ]] || \
+  archneo_die "boot partition GPT UUID mismatch"
+[[ "$(blkid -s PARTUUID -o value "$root_partition")" == "$ARCHNEO_ROOT_PART_GUID" ]] || \
+  archneo_die "root partition GPT UUID mismatch"
+[[ "$(blkid -s PARTUUID -o value "$home_partition")" == "$ARCHNEO_HOME_PART_GUID" ]] || \
+  archneo_die "home partition GPT UUID mismatch"
+
 mkfs.vfat -F 32 -n "$ROCKNIX_ABL_BOOT_LABEL" \
   -i "${ARCHNEO_BOOT_FS_UUID//-/}" "$boot_partition"
 mkfs.ext4 -F -m 0 -L "$ARCHNEO_ROOT_LABEL" \
@@ -131,10 +148,9 @@ install -d -m 0755 "${mount_root}/boot" "${mount_root}/home"
 rsync -aHAX --numeric-ids "${rootfs}/home/." "$mount_home/"
 
 install -m 0644 "${device_out}/KERNEL" "$mount_boot/KERNEL"
+install -m 0644 "${device_out}/KERNEL.md5" "$mount_boot/KERNEL.md5"
 install -m 0644 "${device_out}/KERNEL.sha256" "$mount_boot/KERNEL.sha256"
 install -m 0644 "${device_out}/build-manifest.txt" "$mount_boot/build-manifest.txt"
-install -m 0644 "$initramfs" \
-  "$mount_boot/initramfs-linux-archneo.cpio.gz"
 sync
 
 umount "$mount_boot"
@@ -163,14 +179,14 @@ trap - EXIT
   printf 'device=%s\n' "$device"
   printf 'image_size_mib=%s\n' "$image_size_mib"
   printf 'boot_size_mib=%s\n' "$ABL_SYSTEM_PART_SIZE_MIB"
+  printf 'boot_partition_name=%s\n' "$ROCKNIX_ABL_BOOT_PARTITION_NAME"
   printf 'boot_label=%s\n' "$ROCKNIX_ABL_BOOT_LABEL"
   printf 'boot_uuid=%s\n' "$ARCHNEO_BOOT_FS_UUID"
   printf 'root_size_mib=%s\n' "$ARCHNEO_ROOT_SIZE_MIB"
   printf 'root_uuid=%s\n' "$ARCHNEO_ROOT_FS_UUID"
   printf 'home_seed_size_mib=%s\n' "$ARCHNEO_HOME_SEED_SIZE_MIB"
   printf 'home_uuid=%s\n' "$ARCHNEO_HOME_FS_UUID"
-  printf 'initramfs_delivery=kernel-built-in\n'
-  printf 'initramfs_sha256=%s\n' "$initramfs_sha256"
+  printf 'initramfs_delivery=none-direct-root\n'
   printf 'rootfs_sha256=%s\n' "$(sha256sum -- "${ARCHNEO_CACHE_DIR}/downloads/ArchLinuxARM-aarch64-latest.tar.gz" | awk '{print $1}')"
   printf 'kernel_sha256=%s\n' "$(sha256sum -- "${device_out}/KERNEL" | awk '{print $1}')"
 } > "${device_out}/image-manifest.txt"

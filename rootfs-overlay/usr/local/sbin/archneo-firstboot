@@ -6,12 +6,15 @@ marker="/var/lib/archneo/credentials-set"
 [[ ! -e "$marker" ]] || exit 0
 
 printf '\nArchneo first boot\n'
-printf 'Create passwords for the local administrator accounts.\n\n'
+printf 'Set a password for each local administrator account.\n'
+printf 'The normal login prompt starts after this setup completes.\n\n'
 
+printf '1/2: Set the root password.\n'
 until passwd root; do
   printf 'The root password was not changed; please try again.\n' >&2
 done
 
+printf '\n2/2: Set the deck password (used by sudo).\n'
 until passwd deck; do
   printf 'The deck password was not changed; please try again.\n' >&2
 done

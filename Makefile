@@ -11,8 +11,8 @@ help:
 	@echo "  make fetch-rootfs    Fetch and signature-verify Arch Linux ARM"
 	@echo "  make fetch-firmware  Fetch checksum-pinned firmware archives"
 	@echo "  make prepare-kernel  Fetch Linux, apply ROCKNIX patches, and copy DTs"
-	@echo "  make kernel          Cross-build a Pocket S 2K compile-smoke KERNEL"
-	@echo "  make rootfs          Prepare rootfs/initramfs as root after make kernel"
+	@echo "  make kernel          Cross-build the direct-root SM8550 KERNEL payload"
+	@echo "  make rootfs          Prepare the console-first rootfs after make kernel"
 	@echo "  make image           Build the complete removable image as root"
 
 verify:

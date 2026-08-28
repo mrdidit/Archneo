@@ -41,11 +41,12 @@ pacman -Syu --disable-sandbox --needed --noconfirm \
   bash \
   e2fsprogs \
   linux-firmware \
-  mkinitcpio \
+  networkmanager \
   parted \
   sudo \
   systemd \
-  util-linux
+  util-linux \
+  wpa_supplicant
 
 if getent passwd alarm >/dev/null; then
   userdel --remove alarm
@@ -76,10 +77,17 @@ chmod 0755 \
   /usr/local/sbin/archneo-firstboot \
   /usr/local/sbin/archneo-grow-home
 systemctl disable sshd.service >/dev/null 2>&1 || true
+systemctl disable \
+  systemd-networkd.service \
+  systemd-networkd.socket \
+  systemd-networkd-wait-online.service >/dev/null 2>&1 || true
+systemctl set-default multi-user.target
 systemctl enable \
+  NetworkManager.service \
   archneo-capture-boot.service \
   archneo-firstboot.service \
-  archneo-grow-home.service
+  archneo-grow-home.service \
+  getty@tty1.service
 
 find /boot -mindepth 1 -maxdepth 1 -delete
 

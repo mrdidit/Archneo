@@ -1,5 +1,11 @@
 # Pocket S 2K black-screen diagnostic image
 
+> [!NOTE]
+> This procedure applies to the built-in-initramfs diagnostic branch at commit
+> `e95e9c32aadf3cd8e34be5bf7ad5f0c22730da5b`. ADR 0005 supersedes it for the
+> active bring-up image with an initramfs-free direct root. That newer image
+> cannot create the mkinitcpio FAT stage files described below.
+
 ## Purpose
 
 The reported Pocket S 2K symptom is a black display with a vibration during

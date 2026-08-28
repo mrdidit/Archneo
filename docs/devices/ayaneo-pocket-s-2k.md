@@ -5,9 +5,9 @@
 - Archneo identifier: `ayaneo-pocket-s-2k`
 - SoC/platform: Qualcomm SM8550
 - Bring-up priority: first
-- Current Archneo status: image assembly passed; the device powers on and
-  vibrates but its display remains black with no visible Linux console, while
-  Linux entry remains unproven pending filesystem evidence
+- Current Archneo status: previous image assembly passed, but Archneo has not
+  reached a confirmed console; the next image adopts a separately reported
+  working multi-DTB/direct-root ABL envelope and targets `tty1`
 
 This page describes the original AYANEO Pocket S with the 2K display. It does
 not describe the AYANEO Pocket S2, which uses SM8650.
@@ -40,6 +40,7 @@ The following evidence is required before changing the status from `untested`:
 | Kernel/DTB compile | Passed | GitHub Actions run [`33063572182`](https://github.com/mrdidit/Archneo/actions/runs/33063572182), commit `c51aabe928b731370450c5f096c1fedd16311c29` |
 | Android boot wrapper | Passed (dummy ramdisk only) | Artifact `archneo-ayaneo-pocket-s-2k-c51aabe928b731370450c5f096c1fedd16311c29` |
 | Complete image assembly | Passed | Latest tested diagnostic image: GitHub Actions run [`33193171460`](https://github.com/mrdidit/Archneo/actions/runs/33193171460), commit `ce5478e7e1519afe1135210205ce0aa23340b42f` |
+| External boot reference | Reported booting | Collaborator reports Pocknix SM8550 boots after selecting Pocket S 2K in ABL; exact image and ABL versions still required |
 | ABL prerequisite | Not recorded | Working ROCKNIX-ABL version required |
 | ROCKNIX baseline | Not captured | Pending |
 | ABL boot | Payload selected; kernel entry not proven | First removable-media test appeared to load `/KERNEL`; exact ABL version still required |
@@ -50,7 +51,7 @@ The following evidence is required before changing the status from `untested`:
 | Storage/USB | Not tested | Pending |
 | Controls/rumble | Startup vibration observed | Source of vibration not yet attributed to ABL, firmware, or Linux |
 | GPU | Not tested | Pending |
-| Audio | Not tested | Pending |
+| Audio | Archneo not tested | Pocknix reference reportedly has no audio; Pocket S 2K DTS card model is `SM8550-APS` |
 | Wi-Fi/Bluetooth | Not tested | Pending |
 | Battery/charging/fan | Not tested | Pending |
 | Shutdown/suspend | Not tested | Pending |
@@ -93,3 +94,19 @@ archive into Linux and returned the Android ramdisk to ROCKNIX's literal
 
 The follow-up diagnostic image and evidence-recovery procedure are documented
 in [Pocket S 2K black-screen diagnostics](../diagnostics/pocket-s-2k-display.md).
+
+### Direct-root ABL-parity attempt
+
+- Date prepared: 2026-08-28
+- Trigger: collaborator report that the Pocknix SM8550 family image can select
+  and boot Pocket S 2K in ROCKNIX-ABL, although audio does not work
+- Boot envelope: GPT boot name `system`, FAT label `ROCKNIX`, `KERNEL.md5`,
+  complete pinned ROCKNIX SM8550 DTB set, valid empty Android ramdisk, and
+  direct ext4 `root=PARTUUID=…`
+- Userspace target: `multi-user.target`; `tty1` asks separately for the `root`
+  and `deck` passwords before the login prompt
+- Networking: NetworkManager plus `wpa_supplicant`, installed from the official
+  rolling Arch Linux ARM repositories with no connection preconfigured
+- Unchanged: installed ABL, ext4 `/` and `/home`, filesystem-UUID `fstab`, and
+  Archneo's own userspace/package policy
+- Status: implementation complete; CI build and hardware test pending

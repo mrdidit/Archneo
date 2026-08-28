@@ -14,12 +14,15 @@ permits. Device-tree and hardware-specific configuration remain separate.
 AYANEO Pocket S2 support is out of scope for this milestone. Despite its
 similar name, it is an SM8650 device.
 
-Current implementation phase: the Pocket S 2K kernel, rootfs, initramfs, and
-complete removable image pass CI assembly. Both external- and built-in-
-initramfs hardware images remained on a black screen and left no systemd
-journal or userspace marker. The next diagnostic image retains Archneo's UUID
-root and single ROCKNIX Pocket S 2K DTB while recording initramfs stages on the
-ABL-facing FAT filesystem.
+Current implementation phase: the earlier Pocket S 2K kernel, rootfs,
+initramfs, and complete removable image passed CI assembly before the active
+boot profile was changed. Both external- and built-in-initramfs hardware images
+remained on a black screen and left no systemd journal or userspace marker. A
+collaborator then reported that Pocknix's multi-DTB, direct-root SM8550 image
+boots on Pocket S 2K, with audio not working. The next Archneo image matches
+that low-level ABL envelope while retaining ext4, Archneo userspace, and the
+official rolling Arch Linux ARM repositories. Its first target is the `tty1`
+password setup.
 
 ## Phases
 
@@ -42,6 +45,8 @@ scope.
   arguments.
 - Determine how the correct device tree is selected.
 - Define the kernel, initramfs, device-tree, and root-filesystem interfaces.
+- Validate the `system` GPT name, `ROCKNIX` FAT label, `KERNEL.md5`, appended
+  SM8550 DTB set, and direct-root `PARTUUID` together on Pocket S 2K.
 
 ### 2. Create reproducible build inputs
 
@@ -53,6 +58,9 @@ scope.
 ### 3. Boot the Pocket S 2K from removable media
 
 - Boot without installing Archneo to internal storage.
+- Reach the `tty1` credential setup, set distinct `root` and `deck` passwords,
+  and then reach the normal login prompt.
+- Verify NetworkManager starts and can create a connection with `nmcli`.
 - Reach a diagnostic console with persistent logs.
 - Mount the intended Arch root filesystem.
 - Verify clean shutdown and repeatable cold boots.

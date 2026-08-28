@@ -1,7 +1,16 @@
-# Archneo starts with the pinned ROCKNIX SM8550 configuration. The compile-smoke
-# build has no built-in initramfs; complete images replace this setting with the
-# generated Archneo .cpio.gz archive before the final Image relink.
+# Archneo starts with the pinned ROCKNIX SM8550 configuration. The active
+# bring-up image mounts ext4 directly and retains an empty built-in initramfs.
 CONFIG_INITRAMFS_SOURCE=""
 CONFIG_DEFAULT_HOSTNAME="archneo"
 CONFIG_LOCALVERSION="-archneo"
 # CONFIG_LOCALVERSION_AUTO is not set
+
+# The Pocket S 2K bring-up image mounts its ext4 root directly from Linux.
+# Keep the complete removable-media discovery and root-mount path built in.
+CONFIG_DEVTMPFS=y
+CONFIG_DEVTMPFS_MOUNT=y
+CONFIG_MMC=y
+CONFIG_MMC_BLOCK=y
+CONFIG_MMC_SDHCI=y
+CONFIG_MMC_SDHCI_MSM=y
+CONFIG_EXT4_FS=y

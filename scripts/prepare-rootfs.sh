@@ -40,9 +40,6 @@ fi
 
 if [[ "$existing_schema" == "$ARCHNEO_ROOTFS_SCHEMA:$kernel_release" ]]; then
   archneo_log "using prepared persistent rootfs: ${rootfs}"
-  ARCHNEO_DEVICE="$device" \
-  ARCHNEO_INITRAMFS="${rootfs}/boot/initramfs-linux-archneo.cpio.gz" \
-    "${SCRIPT_DIR}/embed-initramfs.sh"
   exit 0
 fi
 
@@ -131,17 +128,13 @@ archneo_chroot /bin/true || \
 archneo_chroot /bin/bash /root/archneo-configure-rootfs.sh "$kernel_release"
 
 # Apply the pinned ROCKNIX firmware after the rolling system update so pacman
-# cannot replace it, then generate the initramfs from the final tree. Upstream
-# firmware comes from Arch's linux-firmware package and is version-recorded by
-# the package manifest.
-archneo_log "installing pinned firmware and generating the Archneo initramfs"
+# cannot replace it. Upstream firmware comes from Arch's linux-firmware package
+# and is version-recorded by the package manifest. The bring-up kernel mounts
+# ext4 directly and intentionally has no functional initramfs.
+archneo_log "installing pinned firmware for the direct-root Archneo image"
 install -d -m 0755 "${rootfs}/usr/lib/firmware"
 rsync -aHAX --chown=0:0 --exclude='/.archneo-complete' \
   "${extra_firmware_stage}/SM8550/." "${rootfs}/usr/lib/firmware/"
-archneo_chroot /bin/bash /usr/bin/mkinitcpio \
-  -k "$kernel_release" \
-  -c /etc/mkinitcpio.conf.d/archneo.conf \
-  -g /boot/initramfs-linux-archneo.cpio.gz
 
 cleanup_mounts
 mounted_dev=0
@@ -163,8 +156,4 @@ rootfs_sha="$(sha256sum -- "$rootfs_archive" | awk '{print $1}')"
 } > "${rootfs}/usr/share/archneo/rootfs-build.txt"
 printf '%s:%s\n' "$ARCHNEO_ROOTFS_SCHEMA" "$kernel_release" > "${rootfs}/.archneo-complete"
 
-ARCHNEO_DEVICE="$device" \
-ARCHNEO_INITRAMFS="${rootfs}/boot/initramfs-linux-archneo.cpio.gz" \
-  "${SCRIPT_DIR}/embed-initramfs.sh"
-
-archneo_log "prepared rootfs and kernel-built-in initramfs: ${rootfs}"
+archneo_log "prepared direct-root Archneo rootfs: ${rootfs}"

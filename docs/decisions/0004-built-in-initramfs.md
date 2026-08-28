@@ -1,6 +1,6 @@
 # ADR 0004: Keep the functional initramfs inside the kernel
 
-- Status: accepted
+- Status: superseded for active bring-up by ADR 0005
 - Date: 2026-08-27
 
 ## Context
@@ -46,3 +46,11 @@ filesystem for build inspection; ABL is not expected to load that file.
   initramfs execution, root mounting, single-DTB acceptance, display
   initialization, and serial capture.
 - No ABL binary, setting, or internal-storage partition is changed.
+
+## Supersession
+
+The built-in-initramfs image also produced no journal or userspace marker.
+After a collaborator confirmed that Pocknix's multi-DTB, initramfs-free SM8550
+image boots on Pocket S 2K, Archneo selected a direct-root parity test in
+[ADR 0005](0005-direct-root-abl-parity.md). This document remains the record of
+the previous controlled experiment.

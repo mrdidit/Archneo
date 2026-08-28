@@ -41,6 +41,7 @@ jobs:
             bc \
             bison \
             build-essential \
+            cpio \
             curl \
             dosfstools \
             dwarves \

@@ -9,21 +9,21 @@ archneo_load_sources
 archneo_load_platform
 
 device="${ARCHNEO_DEVICE:-ayaneo-pocket-s-2k}"
-package_kind="${ARCHNEO_PACKAGE_KIND:-compile-smoke}"
+package_kind="${ARCHNEO_PACKAGE_KIND:-direct-root}"
 
 case "$device" in
   ayaneo-pocket-s-2k)
-    dtb_name="qcs8550-ayaneo-pockets2k.dtb"
+    selected_dtb_name="qcs8550-ayaneo-pockets2k.dtb"
     ;;
   ayaneo-pocket-evo)
-    dtb_name="qcs8550-ayaneo-pocketevo.dtb"
+    selected_dtb_name="qcs8550-ayaneo-pocketevo.dtb"
     ;;
   *)
     archneo_die "unsupported ARCHNEO_DEVICE: ${device}"
     ;;
 esac
 
-for command in gzip python3 sha256sum tar; do
+for command in cpio find gzip md5sum python3 sed sha256sum sort tar; do
   archneo_need_command "$command"
 done
 
@@ -33,18 +33,25 @@ mkbootimg_dir="${ARCHNEO_BUILD_DIR}/mkbootimg-${MKBOOTIMG_VERSION}"
 device_out="${ARCHNEO_BUILD_DIR}/artifacts/${device}"
 published_out="${ARCHNEO_OUT_DIR}/${device}"
 image="${kernel_build_dir}/arch/arm64/boot/Image"
-dtb="${kernel_build_dir}/arch/arm64/boot/dts/qcom/${dtb_name}"
+dt_source_dir="${ARCHNEO_CACHE_DIR}/rocknix-distribution/projects/ROCKNIX/devices/SM8550/linux/dts/qcom"
+dt_build_dir="${kernel_build_dir}/arch/arm64/boot/dts/qcom"
 kernel_gz="${device_out}/kernel.gz"
 ramdisk="${device_out}/ramdisk"
 kernel_payload="${device_out}/KERNEL"
 builtin_initramfs="${ARCHNEO_BUILTIN_INITRAMFS:-}"
 
-if [[ "$package_kind" == "bootable-image" && -z "$builtin_initramfs" ]]; then
-  archneo_die "bootable-image packaging requires a kernel-built-in initramfs"
-fi
-
 [[ -f "$image" ]] || archneo_die "kernel Image was not built"
-[[ -f "$dtb" ]] || archneo_die "device tree was not built: ${dtb}"
+mapfile -t dtb_names < <(
+  find "$dt_source_dir" -maxdepth 1 -type f -name 'qcs8550-*.dts' \
+    -printf '%f\n' | sed 's/\.dts$/.dtb/' | LC_ALL=C sort
+)
+[[ "${#dtb_names[@]}" -gt 0 ]] || archneo_die "no ROCKNIX SM8550 device trees found"
+printf '%s\n' "${dtb_names[@]}" | grep -Fxq "$selected_dtb_name" || \
+  archneo_die "selected device tree is absent from the SM8550 set: ${selected_dtb_name}"
+for dtb_name in "${dtb_names[@]}"; do
+  [[ -f "${dt_build_dir}/${dtb_name}" ]] || \
+    archneo_die "device tree was not built: ${dt_build_dir}/${dtb_name}"
+done
 mkdir -p -- "$device_out" "$published_out"
 
 archneo_fetch_https "$MKBOOTIMG_URL" "$MKBOOTIMG_SHA256" "$mkbootimg_archive"
@@ -55,9 +62,13 @@ fi
 [[ -f "${mkbootimg_dir}/mkbootimg.py" ]] || archneo_die "mkbootimg.py is missing"
 
 # ROCKNIX-ABL consumes an Android boot-image-v0 payload containing a gzip
-# kernel followed by the selected device tree.
+# kernel followed by the complete, deterministically ordered SM8550 DTB set.
+# A Pocket S 2K hardware report confirms that ABL exposes and boots that model
+# when it is present in the appended set; retain ROCKNIX/Pocknix parity here.
 gzip -9 -n -c -- "$image" > "$kernel_gz"
-cat -- "$dtb" >> "$kernel_gz"
+for dtb_name in "${dtb_names[@]}"; do
+  cat -- "${dt_build_dir}/${dtb_name}" >> "$kernel_gz"
+done
 
 if [[ -n "$builtin_initramfs" ]]; then
   [[ -s "$builtin_initramfs" ]] || \
@@ -70,16 +81,20 @@ if [[ -n "$builtin_initramfs" ]]; then
   ramdisk_kind="rocknix-dummy"
   initramfs_delivery="kernel-built-in"
   builtin_initramfs_sha256="$(sha256sum -- "$builtin_initramfs" | awk '{print $1}')"
+  root_argument="root=UUID=${ARCHNEO_ROOT_FS_UUID}"
 else
-  # This matches public ROCKNIX packaging and is useful only as a compile and
-  # ABL-container smoke artifact. It cannot discover Archneo's UUID root.
-  printf 'dummy' > "$ramdisk"
-  ramdisk_kind="rocknix-dummy"
-  initramfs_delivery="none"
+  # The bring-up image follows the hardware-proven initramfs-free SM8550 path.
+  # Linux can resolve a GPT PARTUUID directly; filesystem UUID resolution would
+  # require early userspace. A valid empty newc archive avoids a harmless
+  # initramfs-unpacking warning without adding a second boot environment.
+  printf '' | cpio --quiet -o -H newc > "$ramdisk"
+  ramdisk_kind="empty-newc"
+  initramfs_delivery="none-direct-root"
   builtin_initramfs_sha256="none"
+  root_argument="root=PARTUUID=${ARCHNEO_ROOT_PART_GUID}"
 fi
 
-cmdline="boot=LABEL=${ROCKNIX_ABL_BOOT_LABEL} disk=UUID=${ARCHNEO_ROOT_FS_UUID} root=UUID=${ARCHNEO_ROOT_FS_UUID} rootfstype=ext4 rw rootwait rd.debug rd.log=all console=ttyMSM0,115200n8 console=tty0 loglevel=7 ignore_loglevel drm.debug=0x1ff log_buf_len=4M allow_mismatched_32bit_el0 fw_devlink.strict=1 pcie_ports=compat irqaffinity=0-2 cgroup.memory=nokmem,nosocket nosoftlockup usbcore.interrupt_interval_override=045e:028e:2"
+cmdline="${root_argument} rootfstype=ext4 rw rootwait console=ttyMSM0,115200n8 console=tty0 systemd.unit=multi-user.target systemd.show_status=1 loglevel=7 ignore_loglevel drm.debug=0x1ff log_buf_len=4M allow_mismatched_32bit_el0 fw_devlink.strict=1 pcie_ports=compat irqaffinity=0-2 cgroup.memory=nokmem,nosocket nosoftlockup usbcore.interrupt_interval_override=045e:028e:2"
 (( ${#cmdline} <= 511 )) || archneo_die "Android boot-image v0 command line exceeds 511 bytes"
 
 python3 "${mkbootimg_dir}/mkbootimg.py" \
@@ -96,8 +111,11 @@ python3 "${mkbootimg_dir}/mkbootimg.py" \
 
 (
   cd "$device_out"
+  md5sum KERNEL > KERNEL.md5
   sha256sum KERNEL > KERNEL.sha256
 )
+
+dtb_list="$(IFS=,; printf '%s' "${dtb_names[*]}")"
 
 {
   printf 'device=%s\n' "$device"
@@ -106,7 +124,10 @@ python3 "${mkbootimg_dir}/mkbootimg.py" \
   printf 'ramdisk_sha256=%s\n' "$(sha256sum -- "$ramdisk" | awk '{print $1}')"
   printf 'initramfs_delivery=%s\n' "$initramfs_delivery"
   printf 'builtin_initramfs_sha256=%s\n' "$builtin_initramfs_sha256"
-  printf 'dtb=%s\n' "$dtb_name"
+  printf 'selected_dtb=%s\n' "$selected_dtb_name"
+  printf 'dtb_selection=abl-appended-set\n'
+  printf 'dtb_count=%s\n' "${#dtb_names[@]}"
+  printf 'dtbs=%s\n' "$dtb_list"
   printf 'linux_version=%s\n' "$LINUX_VERSION"
   printf 'linux_sha256=%s\n' "$LINUX_SHA256"
   printf 'rocknix_distribution_commit=%s\n' "$ROCKNIX_DISTRIBUTION_COMMIT"
@@ -115,6 +136,7 @@ python3 "${mkbootimg_dir}/mkbootimg.py" \
 } > "${device_out}/build-manifest.txt"
 
 cp -a "${device_out}/KERNEL" \
+  "${device_out}/KERNEL.md5" \
   "${device_out}/KERNEL.sha256" \
   "${device_out}/build-manifest.txt" \
   "${device_out}/kernel.gz" \

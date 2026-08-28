@@ -6,9 +6,8 @@ from ROCKNIX and a ROCKNIX-ABL-compatible boot layout.
 
 > [!WARNING]
 > Archneo is at the research and bring-up stage. Complete Pocket S 2K image
-> assembly passes CI, but the first hardware image produced a sustained black
-> screen and no evidence that systemd started. It does not install or modify
-> ABL.
+> assembly passes CI, but Archneo has not yet reached a confirmed TTY on
+> hardware. It does not install or modify ABL.
 
 ## Goals
 
@@ -27,12 +26,24 @@ order:
 2. AYANEO Pocket EVO (`ayaneo-pocket-evo`)
 
 The similarly named AYANEO Pocket S2 is an SM8650 device and is not one of
-these initial targets. Source preparation and a compile-smoke `KERNEL` payload
-have passed CI. Rootfs, firmware, and complete removable-image assembly also
-pass CI. A hardware test of the corrected built-in-initramfs image still left
-the display black and produced no systemd journal or userspace marker. Current
-diagnostics therefore persist initramfs stages to the `ROCKNIX` FAT filesystem
-before attempting to mount the real root.
+these initial targets. Source preparation and the earlier single-DTB `KERNEL`
+payload passed CI. Rootfs, firmware, and complete removable-image assembly also
+passed CI before the active boot-profile change. A hardware test of the
+corrected built-in-initramfs image still left the display black and produced no
+systemd journal or userspace marker.
+
+An external Pocknix SM8550 image has since been reported booting on Pocket S
+2K when that model is selected in ROCKNIX-ABL, although its audio does not
+work. The active Archneo test now copies only its proven low-level envelope:
+the full pinned ROCKNIX SM8550 DTB set, `KERNEL.md5`, and direct ext4 root
+mounting. Archneo retains its own ext4 layout, userspace, and the official
+rolling Arch Linux ARM repositories; no Pocknix package configuration is used.
+
+The image boots to `tty1` and asks independently for `root` and `deck`
+passwords before starting the normal login prompt. `deck` has
+password-protected sudo access. NetworkManager is installed and enabled, but
+no wireless network is preconfigured and no graphical session is installed
+for this bring-up stage.
 
 See the [documentation index](docs/README.md) and [bring-up roadmap](docs/roadmap.md)
 for the current plan and evidence requirements.

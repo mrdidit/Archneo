@@ -47,6 +47,8 @@ for secure_url in \
 done
 [[ "$ROCKNIX_ABL_BOOT_LABEL" == "ROCKNIX" ]] || \
   archneo_die "ROCKNIX_ABL_BOOT_LABEL must remain ROCKNIX for ABL compatibility"
+[[ "$ROCKNIX_ABL_BOOT_PARTITION_NAME" == "system" ]] || \
+  archneo_die "removable ABL boot partition must retain the GPT name system"
 [[ "$ARCHNEO_ROOT_LABEL" =~ ^[A-Z0-9_]{1,16}$ ]] || \
   archneo_die "invalid ext4 root label: ${ARCHNEO_ROOT_LABEL}"
 [[ "$ARCHNEO_HOME_LABEL" =~ ^[A-Z0-9_]{1,16}$ ]] || \
@@ -75,6 +77,8 @@ done
   archneo_die "home seed size must be a positive MiB value"
 [[ "$ARCHNEO_ROOTFS_SCHEMA" =~ ^[1-9][0-9]*$ ]] || \
   archneo_die "rootfs schema must be a positive integer"
+[[ "$ARCHNEO_ROOTFS_SCHEMA" == "5" ]] || \
+  archneo_die "rootfs schema must invalidate pre-NetworkManager staging roots"
 [[ "$ARCHNEO_ROOT_FS_UUID" != "$ARCHNEO_HOME_FS_UUID" ]] || \
   archneo_die "root and home filesystem UUIDs must be different"
 
@@ -86,7 +90,14 @@ for config_line in \
   'CONFIG_INITRAMFS_SOURCE=""' \
   'CONFIG_DEFAULT_HOSTNAME="archneo"' \
   'CONFIG_LOCALVERSION="-archneo"' \
-  '# CONFIG_LOCALVERSION_AUTO is not set'; do
+  '# CONFIG_LOCALVERSION_AUTO is not set' \
+  'CONFIG_DEVTMPFS=y' \
+  'CONFIG_DEVTMPFS_MOUNT=y' \
+  'CONFIG_MMC=y' \
+  'CONFIG_MMC_BLOCK=y' \
+  'CONFIG_MMC_SDHCI=y' \
+  'CONFIG_MMC_SDHCI_MSM=y' \
+  'CONFIG_EXT4_FS=y'; do
   grep -Fxq "$config_line" \
     "${ARCHNEO_PROJECT_ROOT}/config/kernel/archneo-sm8550.fragment" || \
     archneo_die "missing kernel fragment setting: ${config_line}"
@@ -108,8 +119,38 @@ done < <(
   find "${ARCHNEO_PROJECT_ROOT}/rootfs-overlay/etc/initcpio" -type f | LC_ALL=C sort
 )
 
-grep -Eq '^HOOKS=.*archneo-diagnostics' \
-  "${ARCHNEO_PROJECT_ROOT}/rootfs-overlay/etc/mkinitcpio.conf.d/archneo.conf" || \
-  archneo_die "Archneo initramfs diagnostics hook is not enabled"
+configure_rootfs="${ARCHNEO_PROJECT_ROOT}/scripts/configure-rootfs.sh"
+for required_rootfs_line in \
+  '  networkmanager \' \
+  '  wpa_supplicant' \
+  'systemctl set-default multi-user.target' \
+  '  NetworkManager.service \' \
+  '  getty@tty1.service'; do
+  grep -Fxq "$required_rootfs_line" "$configure_rootfs" || \
+    archneo_die "missing console/network rootfs policy: ${required_rootfs_line}"
+done
+grep -Fq 'systemd-networkd.service' "$configure_rootfs" || \
+  archneo_die "systemd-networkd is not disabled before enabling NetworkManager"
+
+firstboot="${ARCHNEO_PROJECT_ROOT}/rootfs-overlay/usr/local/sbin/archneo-firstboot"
+grep -Fxq 'until passwd root; do' "$firstboot" || \
+  archneo_die "first-boot setup does not require a root password"
+grep -Fxq 'until passwd deck; do' "$firstboot" || \
+  archneo_die "first-boot setup does not require a deck password"
+
+[[ ! -e "${ARCHNEO_PROJECT_ROOT}/rootfs-overlay/etc/pacman.conf" ]] || \
+  archneo_die "Archneo must retain the official Arch Linux ARM pacman.conf"
+
+package_kernel="${ARCHNEO_PROJECT_ROOT}/scripts/package-kernel.sh"
+grep -Fq 'root=PARTUUID=${ARCHNEO_ROOT_PART_GUID}' "$package_kernel" || \
+  archneo_die "direct-root KERNEL does not use the root GPT UUID"
+grep -Fq 'md5sum KERNEL > KERNEL.md5' "$package_kernel" || \
+  archneo_die "ABL KERNEL.md5 is not generated"
+grep -Fq -- "-name 'qcs8550-*.dts'" "$package_kernel" || \
+  archneo_die "the complete ROCKNIX SM8550 DTB set is not packaged"
+
+build_image="${ARCHNEO_PROJECT_ROOT}/scripts/build-image.sh"
+grep -Fq -- '--change-name=1:"$ROCKNIX_ABL_BOOT_PARTITION_NAME"' "$build_image" || \
+  archneo_die "removable image does not use the ABL GPT partition name"
 
 archneo_log "repository verification passed"

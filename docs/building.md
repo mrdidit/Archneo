@@ -1,8 +1,8 @@
 # Building Archneo
 
-The repository prepares the ROCKNIX-derived kernel and Pocket S 2K device tree,
-constructs an Arch Linux ARM rootfs, builds a real initramfs, and assembles a
-complete ROCKNIX-ABL-compatible removable-media image.
+The repository prepares the ROCKNIX-derived kernel and complete SM8550 device
+tree set, constructs an Arch Linux ARM rootfs, and assembles a direct-root,
+ROCKNIX-ABL-compatible removable-media image.
 
 ## Host requirements
 
@@ -10,7 +10,7 @@ The scripts target a Linux x86-64 build host. On an Ubuntu or Debian host, the
 kernel stage requires packages equivalent to:
 
 ```text
-bc bison build-essential curl dwarves flex gcc-aarch64-linux-gnu git kmod
+bc bison build-essential cpio curl dwarves flex gcc-aarch64-linux-gnu git kmod
 libelf-dev libncurses-dev libssl-dev patch python3 xz-utils
 ```
 
@@ -45,8 +45,8 @@ ROCKNIX patch stack, SM8550 configuration, and DT sources:
 make prepare-kernel
 ```
 
-Cross-build the Pocket S 2K kernel, DTB, and modules, then create the Android
-boot-image-v0 compile-smoke payload:
+Cross-build the Pocket S 2K kernel, every pinned ROCKNIX SM8550 DTB, and common
+modules, then create the Android boot-image-v0 direct-root payload:
 
 ```sh
 make kernel
@@ -58,9 +58,10 @@ The primary output is:
 out/ayaneo-pocket-s-2k/KERNEL
 ```
 
-This payload contains ROCKNIX's literal `dummy` ramdisk. It proves that the
-selected source, patch stack, configuration, DTB, modules, and Android wrapper
-compile successfully; it is not a complete Archneo boot artifact.
+This payload contains a valid empty `newc` ramdisk, the complete appended DTB
+set, and `root=PARTUUID=…`. It becomes bootable when paired with the matching
+root filesystem in the complete image. `KERNEL.md5` is generated for ABL and
+`KERNEL.sha256` remains Archneo's provenance checksum.
 
 Build the complete removable image after `make kernel`:
 
@@ -73,18 +74,26 @@ The image stage:
 1. downloads the generic Arch Linux ARM rootfs and verifies its detached
    signature against a checksum-pinned official keyring;
 2. installs the custom modules, Arch Linux ARM's version-recorded
-   `linux-firmware` package, and checksum-pinned ROCKNIX SM8550 firmware;
-3. updates the rootfs under qemu, removes `alarm`, creates `deck`, and generates
-   the mkinitcpio `.cpio.gz` archive;
-4. relinks Linux with that archive built in, then rebuilds `/KERNEL` with
-   ROCKNIX's literal `dummy` in the Android ramdisk field; and
-5. creates and verifies the FAT32/ext4/ext4 disk image.
+   `linux-firmware` package, checksum-pinned ROCKNIX SM8550 firmware,
+   NetworkManager, and `wpa_supplicant`;
+3. updates the rootfs from the official Arch Linux ARM repositories under
+   qemu, removes `alarm`, creates locked `root` and `deck` accounts, and sets
+   `multi-user.target` as the default;
+4. enables NetworkManager and the `tty1` first-boot password setup while
+   disabling systemd-networkd and SSH; and
+5. creates and verifies the FAT32/ext4/ext4 disk image with GPT boot name
+   `system`, FAT label `ROCKNIX`, `/KERNEL`, and both kernel checksums.
 
 The published output is:
 
 ```text
 out/ayaneo-pocket-s-2k/Archneo-ayaneo-pocket-s-2k.img.gz
 ```
+
+Archneo does not overlay `/etc/pacman.conf`. The configuration and mirror list
+from the signature-verified Arch Linux ARM rootfs remain installed, including
+the normal `[core]`, `[extra]`, `[alarm]`, and `[aur]` repositories. Pocknix's
+frozen package repository is not copied or referenced.
 
 The compressed image, SHA-256 file, partition-table JSON, and build manifests
 are retained in `out`. The large sparse raw image remains in the persistent
@@ -163,8 +172,8 @@ Pocket S 2K remained on a black screen and required forced power-off. The root
 filesystem then contained neither systemd journal files nor Archneo first-boot
 markers. That image placed the functional initramfs in the Android boot-image
 ramdisk field, whereas public ROCKNIX builds the real initramfs into Linux and
-uses the literal `dummy` externally. Complete Archneo images now follow that
-ROCKNIX boundary.
+uses the literal `dummy` externally. The ADR 0004 follow-up tested that
+built-in arrangement.
 
 The replacement diagnostic image from GitHub Actions run
 [`33193171460`](https://github.com/mrdidit/Archneo/actions/runs/33193171460),
@@ -174,8 +183,11 @@ manifest confirmed `initramfs_delivery=kernel-built-in` and the expected
 payload as
 `551c256fc8a83f6547bd8a77b7ed8dfcbde399d46267ed8388774860ab385d82`.
 The display remained black, and the ext4 root again contained neither a
-systemd journal nor any file below `/var/lib/archneo`. The next image therefore
-moves the first persistent capture point into mkinitcpio, before root mounting.
+systemd journal nor any file below `/var/lib/archneo`. A later diagnostic
+branch moved capture into mkinitcpio. After a collaborator reported that
+Pocknix's multi-DTB, initramfs-free SM8550 image boots on Pocket S 2K, the
+active test changed to the direct-root parity profile in ADR 0005. Archneo does
+not use Pocknix's userspace, package repository, or Btrfs layout.
 
 ## Source and patch policy
 
@@ -188,15 +200,15 @@ ROCKNIX build:
 3. `projects/ROCKNIX/devices/SM8550/patches/linux/*.patch`
 
 Files ending in `.disabled` are deliberately excluded. The entire SM8550 DTS
-overlay is then copied into the kernel tree, while the packaged payload uses
-only the selected device DTB.
+overlay is then copied into the kernel tree. Every `qcs8550-*.dts` supplied by
+that pinned overlay is built and its DTB is appended in deterministic filename
+order; the manifest separately records Pocket S 2K as the selected Archneo
+device profile.
 
-ROCKNIX normally embeds its appliance initramfs. Archneo's canonical
-compile-smoke configuration clears `CONFIG_INITRAMFS_SOURCE` and sets its
-hostname/local version. During complete image assembly, the builder changes
-only the output-tree configuration to name the generated `.cpio.gz` archive
-and relinks `Image`. The Android boot-image ramdisk remains `dummy`, matching
-ROCKNIX, while the built-in archive locates the ext4 root by UUID. The baseline
+The active bring-up configuration clears `CONFIG_INITRAMFS_SOURCE`, sets the
+hostname/local version, and pins devtmpfs, Qualcomm MMC/SDHCI, and ext4 as
+built-ins. Linux resolves the fixed root GPT UUID and mounts ext4 directly.
+The Android boot-image ramdisk is a valid empty `newc` archive. The baseline
 kernel deltas are recorded in
 [`config/kernel/archneo-sm8550.fragment`](../config/kernel/archneo-sm8550.fragment).
 
