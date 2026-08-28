@@ -36,11 +36,13 @@ filesystem for build inspection; ABL is not expected to load that file.
 
 ## Consequences
 
-- The next hardware test changes only initramfs delivery, retaining the single
-  Pocket S 2K DTB, command line, UUIDs, and partition layout.
+- The built-in-initramfs follow-up retained the single Pocket S 2K DTB, UUIDs,
+  and partition layout and added logging-only command-line and rootfs capture
+  changes. It still produced no systemd journal or userspace marker.
 - Archneo no longer depends on an unverified private-loader behaviour for its
   essential early userspace.
 - Complete-image kernel linking must happen after mkinitcpio generation.
-- A continued black screen will move the next investigation toward kernel
-  entry, single-DTB acceptance, display initialization, and serial capture.
+- The continued black screen moves the next investigation toward kernel entry,
+  initramfs execution, root mounting, single-DTB acceptance, display
+  initialization, and serial capture.
 - No ABL binary, setting, or internal-storage partition is changed.

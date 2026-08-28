@@ -102,4 +102,14 @@ done < <(
     -type f | LC_ALL=C sort
 )
 
+while IFS= read -r initcpio_hook; do
+  bash -n "$initcpio_hook"
+done < <(
+  find "${ARCHNEO_PROJECT_ROOT}/rootfs-overlay/etc/initcpio" -type f | LC_ALL=C sort
+)
+
+grep -Eq '^HOOKS=.*archneo-diagnostics' \
+  "${ARCHNEO_PROJECT_ROOT}/rootfs-overlay/etc/mkinitcpio.conf.d/archneo.conf" || \
+  archneo_die "Archneo initramfs diagnostics hook is not enabled"
+
 archneo_log "repository verification passed"

@@ -79,7 +79,7 @@ else
   builtin_initramfs_sha256="none"
 fi
 
-cmdline="boot=LABEL=${ROCKNIX_ABL_BOOT_LABEL} disk=UUID=${ARCHNEO_ROOT_FS_UUID} root=UUID=${ARCHNEO_ROOT_FS_UUID} rootfstype=ext4 rw rootwait console=ttyMSM0,115200n8 console=tty0 loglevel=7 ignore_loglevel drm.debug=0x1ff log_buf_len=4M allow_mismatched_32bit_el0 fw_devlink.strict=1 pcie_ports=compat irqaffinity=0-2 cgroup.memory=nokmem,nosocket nosoftlockup usbcore.interrupt_interval_override=045e:028e:2"
+cmdline="boot=LABEL=${ROCKNIX_ABL_BOOT_LABEL} disk=UUID=${ARCHNEO_ROOT_FS_UUID} root=UUID=${ARCHNEO_ROOT_FS_UUID} rootfstype=ext4 rw rootwait rd.debug rd.log=all console=ttyMSM0,115200n8 console=tty0 loglevel=7 ignore_loglevel drm.debug=0x1ff log_buf_len=4M allow_mismatched_32bit_el0 fw_devlink.strict=1 pcie_ports=compat irqaffinity=0-2 cgroup.memory=nokmem,nosocket nosoftlockup usbcore.interrupt_interval_override=045e:028e:2"
 (( ${#cmdline} <= 511 )) || archneo_die "Android boot-image v0 command line exceeds 511 bytes"
 
 python3 "${mkbootimg_dir}/mkbootimg.py" \

@@ -39,11 +39,11 @@ The following evidence is required before changing the status from `untested`:
 | --- | --- | --- |
 | Kernel/DTB compile | Passed | GitHub Actions run [`33063572182`](https://github.com/mrdidit/Archneo/actions/runs/33063572182), commit `c51aabe928b731370450c5f096c1fedd16311c29` |
 | Android boot wrapper | Passed (dummy ramdisk only) | Artifact `archneo-ayaneo-pocket-s-2k-c51aabe928b731370450c5f096c1fedd16311c29` |
-| Complete image assembly | Passed | GitHub Actions run [`33089290964`](https://github.com/mrdidit/Archneo/actions/runs/33089290964), commit `787ef0d8717b2248c9039f103a60e40144eff779`, artifact digest `459e0e0b0760419a1e259e8923102db3d923c4c963e5195426319dc0c1fcb955` |
+| Complete image assembly | Passed | Latest tested diagnostic image: GitHub Actions run [`33193171460`](https://github.com/mrdidit/Archneo/actions/runs/33193171460), commit `ce5478e7e1519afe1135210205ce0aa23340b42f` |
 | ABL prerequisite | Not recorded | Working ROCKNIX-ABL version required |
 | ROCKNIX baseline | Not captured | Pending |
 | ABL boot | Payload selected; kernel entry not proven | First removable-media test appeared to load `/KERNEL`; exact ABL version still required |
-| Root/userspace | Failed to produce evidence | Correct UUID filesystems were present after forced power-off, but `/var/log/journal` had no files, `/var/lib/archneo` had no markers, and the home filesystem remained at its 1 GiB seed capacity |
+| Root/userspace | Failed to produce evidence | The built-in-initramfs diagnostic image also left `/var/log/journal` and `/var/lib/archneo` empty after forced power-off |
 | Diagnostic console | Failed | No visible console; UART not captured |
 | Display/backlight | Black screen | Whether the panel backlight was electrically on was not recorded |
 | Touchscreen | Not tested | Pending |
@@ -72,20 +72,24 @@ revision, test procedure, and observed result.
 - Unknowns still to record: hardware revision, ROCKNIX-ABL version, whether
   the backlight was lit, and a known-good ROCKNIX comparison on the same unit
 
-This result does not establish kernel entry. The next image changes only the
-initramfs delivery: Archneo's archive is built into Linux and the Android
-ramdisk returns to ROCKNIX's literal `dummy`.
+This result did not establish kernel entry. The follow-up moved Archneo's
+archive into Linux and returned the Android ramdisk to ROCKNIX's literal
+`dummy`.
 
-### Clarification of the visible symptom
+### Built-in-initramfs diagnostic attempt
 
 - Date reported: 2026-08-28
-- Image build: pending identification
+- Image build: GitHub Actions run `33193171460`, commit `ce5478e7`
+- Verified payload SHA-256:
+  `551c256fc8a83f6547bd8a77b7ed8dfcbde399d46267ed8388774860ab385d82`
+- FAT manifest: built-in initramfs and DRM debugging command line confirmed
 - Observation: the display remains black, with no visible console or kernel
   panic output; a vibration occurs during startup
-- Post-test evidence: pending
-- Interpretation: the display path is the primary visible symptom, but the
-  vibration alone does not prove Linux entry because it may originate in ABL
-  or firmware
+- Post-test evidence: no systemd journal and no file below
+  `/var/lib/archneo`; the systemd diagnostic capture service did not run
+- Interpretation: the display path remains the primary visible symptom, but
+  the evidence cannot yet distinguish kernel entry, initramfs execution, root
+  mounting, or display initialization
 
 The follow-up diagnostic image and evidence-recovery procedure are documented
 in [Pocket S 2K black-screen diagnostics](../diagnostics/pocket-s-2k-display.md).

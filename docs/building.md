@@ -164,7 +164,18 @@ filesystem then contained neither systemd journal files nor Archneo first-boot
 markers. That image placed the functional initramfs in the Android boot-image
 ramdisk field, whereas public ROCKNIX builds the real initramfs into Linux and
 uses the literal `dummy` externally. Complete Archneo images now follow that
-ROCKNIX boundary; the replacement hardware result is pending.
+ROCKNIX boundary.
+
+The replacement diagnostic image from GitHub Actions run
+[`33193171460`](https://github.com/mrdidit/Archneo/actions/runs/33193171460),
+commit `ce5478e7e1519afe1135210205ce0aa23340b42f`, was then tested. Its FAT
+manifest confirmed `initramfs_delivery=kernel-built-in` and the expected
+`drm.debug` display logging command line, and `KERNEL.sha256` verified the
+payload as
+`551c256fc8a83f6547bd8a77b7ed8dfcbde399d46267ed8388774860ab385d82`.
+The display remained black, and the ext4 root again contained neither a
+systemd journal nor any file below `/var/lib/archneo`. The next image therefore
+moves the first persistent capture point into mkinitcpio, before root mounting.
 
 ## Source and patch policy
 

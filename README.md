@@ -29,9 +29,10 @@ order:
 The similarly named AYANEO Pocket S2 is an SM8650 device and is not one of
 these initial targets. Source preparation and a compile-smoke `KERNEL` payload
 have passed CI. Rootfs, firmware, and complete removable-image assembly also
-pass CI. The first hardware test exposed an unproven external-initramfs
-assumption; the next image restores ROCKNIX's built-in-initramfs packaging for
-another controlled test.
+pass CI. A hardware test of the corrected built-in-initramfs image still left
+the display black and produced no systemd journal or userspace marker. Current
+diagnostics therefore persist initramfs stages to the `ROCKNIX` FAT filesystem
+before attempting to mount the real root.
 
 See the [documentation index](docs/README.md) and [bring-up roadmap](docs/roadmap.md)
 for the current plan and evidence requirements.

@@ -1,0 +1,139 @@
+#!/usr/bin/ash
+
+ARCHNEO_DIAG_MOUNT="/run/archneo-boot"
+ARCHNEO_DIAG_BOOT_ID="$(cat /proc/sys/kernel/random/boot_id 2>/dev/null)"
+[ -n "$ARCHNEO_DIAG_BOOT_ID" ] || ARCHNEO_DIAG_BOOT_ID="unknown-boot"
+
+archneo_diag_mount_boot() {
+    local attempt boot_device boot_label boot_spec
+
+    if grep -qs " ${ARCHNEO_DIAG_MOUNT} " /proc/mounts; then
+        return 0
+    fi
+
+    mkdir -p "$ARCHNEO_DIAG_MOUNT"
+    boot_spec="$(getarg boot)"
+    case "$boot_spec" in
+        LABEL=*) boot_label="${boot_spec#LABEL=}" ;;
+        *) boot_label="ROCKNIX" ;;
+    esac
+
+    boot_device=""
+    for attempt in 1 2 3 4 5 6 7 8 9 10; do
+        boot_device="$(blkid -L "$boot_label" 2>/dev/null)"
+        [ -b "$boot_device" ] && break
+        sleep 1
+    done
+
+    if [ ! -b "$boot_device" ]; then
+        echo "archneo-diagnostics: unable to resolve boot label $boot_label" >&2
+        return 1
+    fi
+
+    if ! mount -t vfat -o rw "$boot_device" "$ARCHNEO_DIAG_MOUNT"; then
+        echo "archneo-diagnostics: unable to mount $boot_device" >&2
+        return 1
+    fi
+
+    return 0
+}
+
+archneo_diag_record() {
+    local destination diag_dir partial stage
+
+    stage="$1"
+    archneo_diag_mount_boot || return 0
+
+    diag_dir="${ARCHNEO_DIAG_MOUNT}/archneo-diagnostics/${ARCHNEO_DIAG_BOOT_ID}"
+    destination="${diag_dir}/${stage}.log"
+    partial="${destination}.partial"
+    mkdir -p "$diag_dir"
+
+    {
+        printf 'archneo_boot_id=%s\n' "$ARCHNEO_DIAG_BOOT_ID"
+        printf 'stage=%s\n' "$stage"
+        printf 'uptime_seconds='
+        cut -d ' ' -f 1 /proc/uptime
+
+        printf '\n[kernel command line]\n'
+        cat /proc/cmdline
+
+        printf '\n[device-tree model]\n'
+        tr -d '\000' < /proc/device-tree/model
+        printf '\n'
+
+        printf '\n[device-tree compatible]\n'
+        tr '\000' '\n' < /proc/device-tree/compatible
+
+        printf '\n[resolved root]\n'
+        printf 'root=%s\n' "${root:-unset}"
+        printf 'rootfstype=%s\n' "${rootfstype:-unset}"
+        printf 'rwopt=%s\n' "${rwopt:-unset}"
+
+        printf '\n[blkid]\n'
+        blkid
+
+        printf '\n[device links]\n'
+        ls -la /dev/disk/by-label /dev/disk/by-uuid
+
+        printf '\n[mounts]\n'
+        cat /proc/mounts
+
+        printf '\n[loaded modules]\n'
+        cat /proc/modules
+
+        printf '\n[DRM sysfs]\n'
+        ls -la /sys/class/drm
+
+        printf '\n[MIPI DSI bus]\n'
+        ls -la /sys/bus/mipi-dsi/devices /sys/bus/mipi-dsi/drivers
+
+        printf '\n[kernel log]\n'
+        dmesg
+
+        printf '\n[mkinitcpio log]\n'
+        if [ -r /run/initramfs/init.log ]; then
+            cat /run/initramfs/init.log
+        else
+            printf 'unavailable\n'
+        fi
+    } > "$partial" 2>&1
+
+    mv "$partial" "$destination"
+    sync
+}
+
+archneo_diag_mark_real_root() {
+    local stage
+
+    stage="$1"
+    if [ -d /sysroot ] && [ "$(stat -c %D /)" != "$(stat -c %D /sysroot)" ]; then
+        mkdir -p /sysroot/var/lib/archneo
+        printf '%s\n' "$stage" > /sysroot/var/lib/archneo/initramfs-stage
+        if [ -r /run/initramfs/init.log ]; then
+            cp /run/initramfs/init.log /sysroot/var/lib/archneo/initramfs.log
+        fi
+        sync
+    fi
+}
+
+run_hook() {
+    archneo_diag_record initramfs-before-root
+}
+
+run_latehook() {
+    archneo_diag_record initramfs-root-mounted
+    archneo_diag_mark_real_root root-mounted
+}
+
+run_cleanuphook() {
+    archneo_diag_record initramfs-before-switch-root
+    archneo_diag_mark_real_root before-switch-root
+    if grep -qs " ${ARCHNEO_DIAG_MOUNT} " /proc/mounts; then
+        umount "$ARCHNEO_DIAG_MOUNT" || true
+    fi
+}
+
+run_emergencyhook() {
+    archneo_diag_record initramfs-emergency
+}

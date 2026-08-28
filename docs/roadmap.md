@@ -15,11 +15,11 @@ AYANEO Pocket S2 support is out of scope for this milestone. Despite its
 similar name, it is an SM8650 device.
 
 Current implementation phase: the Pocket S 2K kernel, rootfs, initramfs, and
-complete removable image pass CI assembly. The first hardware image appeared
-to be selected by ABL but remained on a black screen, required a forced
-power-off, and left no systemd journal or first-boot markers. The next
-controlled image restores ROCKNIX's built-in-initramfs delivery while retaining
-Archneo's UUID root and single Pocket S 2K DTB.
+complete removable image pass CI assembly. Both external- and built-in-
+initramfs hardware images remained on a black screen and left no systemd
+journal or userspace marker. The next diagnostic image retains Archneo's UUID
+root and single ROCKNIX Pocket S 2K DTB while recording initramfs stages on the
+ABL-facing FAT filesystem.
 
 ## Phases
 

@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+build() {
+  add_runscript
+}
+
+help() {
+  cat <<'HELPEOF'
+Persist Archneo early-boot stages and kernel logs to the ABL-facing ROCKNIX
+filesystem. This diagnostic hook does not alter ABL or its filesystem label.
+HELPEOF
+}
