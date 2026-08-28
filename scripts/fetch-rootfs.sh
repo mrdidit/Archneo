@@ -45,6 +45,8 @@ fetch_moving_file() {
 
   archneo_log "fetching ${url}"
   curl --fail --location --proto '=http,https' --proto-redir '=http,https' \
+    --http1.1 --connect-timeout 30 --retry 8 --retry-delay 5 \
+    --retry-max-time 900 --retry-all-errors --continue-at - \
     --output "$partial" -- "$url"
   mv -- "$partial" "$destination"
 }

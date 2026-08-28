@@ -84,8 +84,12 @@ archneo_fetch_https() {
 
   archneo_need_command curl
   archneo_log "fetching ${url}"
-  curl --fail --location --proto '=https' --tlsv1.2 \
-    --output "$partial" -- "$url"
+  # Large kernel and firmware archives occasionally encounter transient HTTP/2
+  # resets on hosted CI runners. Force the more predictable HTTP/1.1 transport,
+  # keep the partial file, and resume it across bounded retries and later runs.
+  curl --fail --location --proto '=https' --tlsv1.2 --http1.1 \
+    --connect-timeout 30 --retry 8 --retry-delay 5 --retry-max-time 900 \
+    --retry-all-errors --continue-at - --output "$partial" -- "$url"
   archneo_verify_sha256 "$expected_sha256" "$partial"
   mv -- "$partial" "$destination"
 }
