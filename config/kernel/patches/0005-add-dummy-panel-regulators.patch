@@ -1,0 +1,38 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+Subject: [PATCH] arm64: dts: qcom: ayaneo-pocket-s-2k: add panel supply aliases
+
+The WT0600 2K panel driver requests vddio, vci, and vdd in addition to
+avdd and avee. Provide those optional driver supply names from an always-on
+1.8 V fixed regulator so the panel can complete probe on the Pocket S 2K.
+
+---
+ arch/arm64/boot/dts/qcom/qcs8550-ayaneo-pockets2k.dts | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/qcom/qcs8550-ayaneo-pockets2k.dts b/arch/arm64/boot/dts/qcom/qcs8550-ayaneo-pockets2k.dts
+--- a/arch/arm64/boot/dts/qcom/qcs8550-ayaneo-pockets2k.dts
++++ b/arch/arm64/boot/dts/qcom/qcs8550-ayaneo-pockets2k.dts
+@@ -12,4 +12,14 @@
+ 	model = "AYANEO Pocket S 2K";
+ 	compatible = "ayaneo,pocket-s1", "qcom,sm8550";
+ 	chassis-type = "handset";
++
++	panel_dummy_1p8: panel-dummy-1p8-regulator {
++		compatible = "regulator-fixed";
++		regulator-name = "panel-dummy-1p8";
++		regulator-min-microvolt = <1800000>;
++		regulator-max-microvolt = <1800000>;
++		regulator-always-on;
++		regulator-boot-on;
++		vin-supply = <&vph_pwr>;
++	};
+ };
+@@ -104,5 +112,8 @@
+ 	avdd-supply = <&sgm3804_pos>;
+ 	avee-supply = <&sgm3804_neg>;
++	vddio-supply = <&panel_dummy_1p8>;
++	vci-supply = <&panel_dummy_1p8>;
++	vdd-supply = <&panel_dummy_1p8>;
+ 
+ 	reset-gpios = <&tlmm 133 GPIO_ACTIVE_LOW>;
+ 	backlight = <&backlight>;
