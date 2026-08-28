@@ -9,6 +9,7 @@ and known limitations are part of the deliverable.
 
 - [Bring-up roadmap](roadmap.md)
 - [Building Archneo](building.md)
+- [Pocket S 2K white-screen diagnostics](diagnostics/pocket-s-2k-white-screen.md)
 - [ROCKNIX-ABL boot contract](architecture/boot-contract.md)
 - [Planned internal-storage installer](architecture/internal-installer.md)
 - [AYANEO Pocket S 2K](devices/ayaneo-pocket-s-2k.md)

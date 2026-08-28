@@ -1,0 +1,12 @@
+[Unit]
+Description=Capture Archneo first-boot kernel and display diagnostics
+After=local-fs.target systemd-journald.service sys-kernel-debug.mount
+Wants=sys-kernel-debug.mount
+ConditionPathIsReadWrite=/var/lib/archneo
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/archneo-capture-boot
+
+[Install]
+WantedBy=multi-user.target

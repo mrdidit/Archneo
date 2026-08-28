@@ -5,7 +5,9 @@
 - Archneo identifier: `ayaneo-pocket-s-2k`
 - SoC/platform: Qualcomm SM8550
 - Bring-up priority: first
-- Current Archneo status: image assembly passed; first hardware image black-screened before any recorded systemd activity
+- Current Archneo status: image assembly passed; the latest reported hardware
+  attempt showed a white screen and startup vibration, but Linux entry remains
+  unproven pending filesystem evidence
 
 This page describes the original AYANEO Pocket S with the 2K display. It does
 not describe the AYANEO Pocket S2, which uses SM8650.
@@ -73,3 +75,15 @@ revision, test procedure, and observed result.
 This result does not establish kernel entry. The next image changes only the
 initramfs delivery: Archneo's archive is built into Linux and the Android
 ramdisk returns to ROCKNIX's literal `dummy`.
+
+### Second reported hardware observation
+
+- Date reported: 2026-08-28
+- Image build: pending identification
+- Observation: white screen with a vibration during startup
+- Post-test evidence: pending
+- Interpretation: neither symptom proves Linux entry; the powered panel may
+  lack valid DSI scanout, and the vibration may originate in ABL or firmware
+
+The follow-up diagnostic image and evidence-recovery procedure are documented
+in [Pocket S 2K white-screen diagnostics](../diagnostics/pocket-s-2k-white-screen.md).

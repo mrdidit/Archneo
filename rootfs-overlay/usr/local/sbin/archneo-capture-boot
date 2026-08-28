@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+
+set -u
+
+state_dir="/var/lib/archneo"
+boot_id="$(</proc/sys/kernel/random/boot_id)"
+output_dir="${state_dir}/diagnostics/${boot_id}"
+
+install -d -m 0755 "$output_dir"
+printf '%s\n' "$boot_id" > "${state_dir}/userspace-reached"
+sync
+
+capture_snapshot() {
+  local label="$1"
+  local destination="${output_dir}/${label}.log"
+  local partial="${destination}.partial"
+  local connector attribute
+
+  {
+    printf 'archneo_boot_id=%s\n' "$boot_id"
+    printf 'snapshot=%s\n' "$label"
+    printf 'captured_at=%s\n' "$(date --iso-8601=seconds)"
+    printf 'uptime_seconds=%s\n' "$(cut -d ' ' -f 1 /proc/uptime)"
+
+    printf '\n[uname]\n'
+    uname -a
+
+    printf '\n[device-tree model]\n'
+    tr -d '\000' < /proc/device-tree/model
+    printf '\n'
+
+    printf '\n[kernel command line]\n'
+    cat /proc/cmdline
+
+    printf '\n[mounts]\n'
+    findmnt --real
+
+    printf '\n[failed systemd units]\n'
+    systemctl --failed --no-pager
+
+    printf '\n[DRM connectors]\n'
+    for connector in /sys/class/drm/card*-*; do
+      [[ -d "$connector" ]] || continue
+      printf '%s\n' "${connector##*/}"
+      for attribute in enabled status modes; do
+        if [[ -r "${connector}/${attribute}" ]]; then
+          printf '  %s: ' "$attribute"
+          tr '\n' ' ' < "${connector}/${attribute}"
+          printf '\n'
+        fi
+      done
+    done
+
+    printf '\n[DRM atomic state]\n'
+    if [[ -r /sys/kernel/debug/dri/0/state ]]; then
+      cat /sys/kernel/debug/dri/0/state
+    else
+      printf 'unavailable\n'
+    fi
+
+    printf '\n[regulator summary]\n'
+    if [[ -r /sys/kernel/debug/regulator/regulator_summary ]]; then
+      cat /sys/kernel/debug/regulator/regulator_summary
+    else
+      printf 'unavailable\n'
+    fi
+
+    printf '\n[kernel log]\n'
+    dmesg --color=never
+
+    printf '\n[kernel journal]\n'
+    journalctl --boot --dmesg --no-pager
+  } > "$partial" 2>&1
+
+  mv -- "$partial" "$destination"
+  journalctl --sync >/dev/null 2>&1 || true
+  sync
+}
+
+capture_snapshot 00s
+sleep 5
+capture_snapshot 05s
+sleep 10
+capture_snapshot 15s
+sleep 15
+capture_snapshot 30s
+sleep 30
+capture_snapshot 60s
+
+touch "${output_dir}/capture-complete"
+sync

@@ -71,9 +71,15 @@ passwd --lock root
 passwd --lock deck
 
 chmod 0440 /etc/sudoers.d/10-archneo-wheel
-chmod 0755 /usr/local/sbin/archneo-firstboot /usr/local/sbin/archneo-grow-home
+chmod 0755 \
+  /usr/local/sbin/archneo-capture-boot \
+  /usr/local/sbin/archneo-firstboot \
+  /usr/local/sbin/archneo-grow-home
 systemctl disable sshd.service >/dev/null 2>&1 || true
-systemctl enable archneo-firstboot.service archneo-grow-home.service
+systemctl enable \
+  archneo-capture-boot.service \
+  archneo-firstboot.service \
+  archneo-grow-home.service
 
 find /boot -mindepth 1 -maxdepth 1 -delete
 
