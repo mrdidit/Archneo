@@ -74,7 +74,7 @@ archneo_diag_record() {
         blkid
 
         printf '\n[device links]\n'
-        ls -la /dev/disk/by-label /dev/disk/by-uuid
+        ls -la /dev/disk/by-label /dev/disk/by-uuid /dev/disk/by-partuuid
 
         printf '\n[mounts]\n'
         cat /proc/mounts

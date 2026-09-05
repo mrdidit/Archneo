@@ -16,9 +16,22 @@ for command in bsdtar chroot find mount mountpoint qemu-aarch64-static rsync sha
 done
 
 device="$ARCHNEO_DEVICE"
+early_boot_diagnostics="${ARCHNEO_EARLY_BOOT_DIAGNOSTICS:-0}"
+case "$early_boot_diagnostics" in
+  0)
+    rootfs_suffix=""
+    ;;
+  1)
+    rootfs_suffix="-early-boot-diagnostic"
+    ;;
+  *)
+    archneo_die "ARCHNEO_EARLY_BOOT_DIAGNOSTICS must be 0 or 1"
+    ;;
+esac
 device_out="${ARCHNEO_BUILD_DIR}/artifacts/${device}"
 modules_root="${device_out}/rootfs-overlay/lib/modules"
-rootfs="${ARCHNEO_BUILD_DIR}/rootfs/${device}"
+rootfs="${ARCHNEO_BUILD_DIR}/rootfs/${device}${rootfs_suffix}"
+initramfs="${rootfs}/boot/initramfs-linux-archneo.cpio.gz"
 rootfs_archive="${ARCHNEO_CACHE_DIR}/downloads/ArchLinuxARM-aarch64-latest.tar.gz"
 extra_firmware_archive="${ARCHNEO_CACHE_DIR}/downloads/rocknix-extra-firmware-${ROCKNIX_EXTRA_FIRMWARE_COMMIT}.tar.gz"
 extra_firmware_stage="${ARCHNEO_BUILD_DIR}/firmware/rocknix-extra-${ROCKNIX_EXTRA_FIRMWARE_COMMIT}"
@@ -39,9 +52,16 @@ else
   existing_schema=""
 fi
 
-rootfs_identity="${ARCHNEO_ROOTFS_SCHEMA}:${kernel_release}:${ARCHNEO_HOME_FS_UUID}"
+rootfs_identity="${ARCHNEO_ROOTFS_SCHEMA}:${kernel_release}:${ARCHNEO_HOME_FS_UUID}:${early_boot_diagnostics}"
 if [[ "$existing_schema" == "$rootfs_identity" ]]; then
   archneo_log "using prepared persistent rootfs: ${rootfs}"
+  if (( early_boot_diagnostics )); then
+    [[ -s "$initramfs" ]] || \
+      archneo_die "cached diagnostic rootfs has no initramfs: ${initramfs}"
+    ARCHNEO_DEVICE="$device" \
+    ARCHNEO_INITRAMFS="$initramfs" \
+      "${SCRIPT_DIR}/embed-initramfs.sh"
+  fi
   exit 0
 fi
 
@@ -139,12 +159,20 @@ archneo_chroot /bin/bash /root/archneo-configure-rootfs.sh "$kernel_release"
 
 # Apply the pinned ROCKNIX firmware after the rolling system update so pacman
 # cannot replace it. Upstream firmware comes from Arch's linux-firmware package
-# and is version-recorded by the package manifest. The bring-up kernel mounts
-# ext4 directly and intentionally has no functional initramfs.
-archneo_log "installing pinned firmware for the direct-root Archneo image"
+# and is version-recorded by the package manifest.
+archneo_log "installing pinned firmware for the Archneo image"
 install -d -m 0755 "${rootfs}/usr/lib/firmware"
 rsync -aHAX --chown=0:0 --exclude='/.archneo-complete' \
   "${extra_firmware_stage}/SM8550/." "${rootfs}/usr/lib/firmware/"
+
+if (( early_boot_diagnostics )); then
+  archneo_log "generating the early-boot diagnostic initramfs"
+  archneo_chroot /bin/bash /usr/bin/mkinitcpio \
+    -k "$kernel_release" \
+    -c /etc/mkinitcpio.conf.d/archneo.conf \
+    -g /boot/initramfs-linux-archneo.cpio.gz
+  [[ -s "$initramfs" ]] || archneo_die "mkinitcpio did not create ${initramfs}"
+fi
 
 cleanup_mounts
 mounted_dev=0
@@ -166,4 +194,11 @@ rootfs_sha="$(sha256sum -- "$rootfs_archive" | awk '{print $1}')"
 } > "${rootfs}/usr/share/archneo/rootfs-build.txt"
 printf '%s\n' "$rootfs_identity" > "${rootfs}/.archneo-complete"
 
-archneo_log "prepared direct-root Archneo rootfs: ${rootfs}"
+if (( early_boot_diagnostics )); then
+  ARCHNEO_DEVICE="$device" \
+  ARCHNEO_INITRAMFS="$initramfs" \
+    "${SCRIPT_DIR}/embed-initramfs.sh"
+  archneo_log "prepared early-boot diagnostic Archneo rootfs: ${rootfs}"
+else
+  archneo_log "prepared direct-root Archneo rootfs: ${rootfs}"
+fi

@@ -45,18 +45,20 @@ The default `make kernel` and `sudo make image` targets now select
 The image only writes removable media. It neither contains nor replaces
 ROCKNIX-ABL.
 
-## First controlled test
+## Next controlled test
 
 1. Follow [writing an Archneo removable image](../writing-removable-media.md)
-   to verify and write `Archneo-ayaneo-pocket-evo.img.gz` as a complete disk
+   to verify and write
+   `Archneo-ayaneo-pocket-evo-early-boot-diagnostic.img.gz` as a complete disk
    image.
 2. Safely eject it, insert it into Pocket EVO, and select Pocket EVO in
    ROCKNIX-ABL.
 3. Record whether the panel changes, the TTY password setup appears, and the
    device shuts down normally. Do not infer Linux boot merely from vibration.
-4. After a forced stop or failed boot, mount `ARCHNEO_ROOT` on another Linux
-   system and preserve `/var/lib/archneo` plus `/var/log/journal` before the
-   next attempt.
+4. After a forced stop or failed boot, mount both `ROCKNIX` and
+   `ARCHNEO_ROOT` on another Linux system. Preserve `/archneo-diagnostics`
+   from `ROCKNIX`, then `/var/lib/archneo` and `/var/log/journal` from the root
+   before the next attempt.
 5. If a TTY appears, set both requested passwords, log in as `deck`, and
    capture `sudo journalctl -b`, `sudo dmesg`, `/proc/device-tree/model`, and
    `systemctl --failed`.
@@ -66,8 +68,8 @@ ROCKNIX-ABL.
 | Area | Status | First evidence required |
 | --- | --- | --- |
 | ABL payload selection | Attempted; handoff unproven | ABL selection plus observed handoff |
-| Kernel entry and ext4 root | Untested | journal or `/var/lib/archneo/userspace-reached` |
-| Display/TTY | Qualcomm splash retained on USB-media attempt | visible first-boot password prompt |
+| Kernel entry and ext4 root | No evidence from USB or microSD | FAT initramfs stage, journal, or `/var/lib/archneo/userspace-reached` |
+| Display/TTY | USB retained Qualcomm splash; microSD became black | visible first-boot password prompt |
 | Touchscreen | Untested | evdev device and coordinate test |
 | Internal/removable storage | Untested | `lsblk`, mount, and I/O observations |
 | Controls and rumble | Untested | input-device/event mapping |
@@ -101,3 +103,18 @@ device is described as supported.
 - Next controlled change: write the identical artifact to microSD, remove the
   USB storage, wait for first-boot work, then inspect the card for persistent
   userspace markers and journal files.
+
+## Second hardware attempt
+
+- Date reported: 2026-09-05
+- Image: the same run `33961866086` artifact and commit `57ca9142`
+- Medium: microSD; USB storage removed
+- Observation: the unit vibrated and then changed from the Qualcomm splash to
+  a black display
+- Test duration: five minutes before forced shutdown
+- Post-test evidence: both `/var/lib/archneo` and `/var/log/journal` were empty
+- Interpretation: changing to the intended SD path changed the visible display
+  state but still did not prove Linux entry, root mounting, or systemd startup
+- Next controlled change: the ADR 0007 image adds a kernel-built-in diagnostic
+  initramfs while retaining the full DTB set and EVO root `PARTUUID`; inspect
+  `/archneo-diagnostics` on `ROCKNIX` after the test

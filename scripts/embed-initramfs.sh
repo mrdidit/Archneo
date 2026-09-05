@@ -60,6 +60,6 @@ cmp -s -- "$initramfs" "$embedded_initramfs" || \
   archneo_die "kernel embedded-initramfs data differs from the Archneo archive"
 
 ARCHNEO_DEVICE="$device" \
-ARCHNEO_PACKAGE_KIND="bootable-image" \
+ARCHNEO_PACKAGE_KIND="early-boot-diagnostic" \
 ARCHNEO_BUILTIN_INITRAMFS="$initramfs" \
   "${SCRIPT_DIR}/package-kernel.sh"

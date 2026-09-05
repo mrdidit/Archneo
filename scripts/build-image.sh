@@ -11,21 +11,34 @@ archneo_load_device
 
 [[ "$(id -u)" == "0" ]] || archneo_die "disk-image construction must run as root"
 
-for command in blkid e2fsck fsck.vfat grep gzip losetup md5sum mkfs.ext4 mkfs.vfat \
+for command in awk blkid e2fsck fsck.vfat grep gzip losetup md5sum mkfs.ext4 mkfs.vfat \
   mount mountpoint rsync sgdisk sfdisk sha256sum sync truncate udevadm umount; do
   archneo_need_command "$command"
 done
 
 device="$ARCHNEO_DEVICE"
-rootfs="${ARCHNEO_BUILD_DIR}/rootfs/${device}"
+early_boot_diagnostics="${ARCHNEO_EARLY_BOOT_DIAGNOSTICS:-0}"
+case "$early_boot_diagnostics" in
+  0)
+    image_suffix=""
+    ;;
+  1)
+    image_suffix="-early-boot-diagnostic"
+    ;;
+  *)
+    archneo_die "ARCHNEO_EARLY_BOOT_DIAGNOSTICS must be 0 or 1"
+    ;;
+esac
+rootfs="${ARCHNEO_BUILD_DIR}/rootfs/${device}${image_suffix}"
 device_out="${ARCHNEO_OUT_DIR}/${device}"
-image_work_dir="${ARCHNEO_BUILD_DIR}/images/${device}"
-mount_root="${ARCHNEO_BUILD_DIR}/mounts/${device}/root"
-mount_home="${ARCHNEO_BUILD_DIR}/mounts/${device}/home"
-mount_boot="${ARCHNEO_BUILD_DIR}/mounts/${device}/boot"
-raw_image="${image_work_dir}/Archneo-${device}.img"
-compressed_image="${device_out}/Archneo-${device}.img.gz"
+image_work_dir="${ARCHNEO_BUILD_DIR}/images/${device}${image_suffix}"
+mount_root="${ARCHNEO_BUILD_DIR}/mounts/${device}${image_suffix}/root"
+mount_home="${ARCHNEO_BUILD_DIR}/mounts/${device}${image_suffix}/home"
+mount_boot="${ARCHNEO_BUILD_DIR}/mounts/${device}${image_suffix}/boot"
+raw_image="${image_work_dir}/Archneo-${device}${image_suffix}.img"
+compressed_image="${device_out}/Archneo-${device}${image_suffix}.img.gz"
 compressed_partial="${compressed_image}.part"
+initramfs="${rootfs}/boot/initramfs-linux-archneo.cpio.gz"
 
 "${SCRIPT_DIR}/prepare-rootfs.sh"
 [[ -s "${device_out}/KERNEL" ]] || archneo_die "bootable KERNEL payload is missing"
@@ -36,8 +49,26 @@ compressed_partial="${compressed_image}.part"
   md5sum --check KERNEL.md5
   sha256sum --check KERNEL.sha256
 )
-grep -Fxq 'initramfs_delivery=none-direct-root' "${device_out}/build-manifest.txt" || \
-  archneo_die "KERNEL manifest does not record the direct-root boot path"
+if (( early_boot_diagnostics )); then
+  [[ -s "$initramfs" ]] || archneo_die "diagnostic initramfs is missing"
+  initramfs_sha256="$(sha256sum -- "$initramfs" | awk '{print $1}')"
+  grep -Fxq 'package_kind=early-boot-diagnostic' \
+    "${device_out}/build-manifest.txt" || \
+    archneo_die "KERNEL manifest does not record the diagnostic package"
+  grep -Fxq 'initramfs_delivery=kernel-built-in' \
+    "${device_out}/build-manifest.txt" || \
+    archneo_die "KERNEL manifest does not record the built-in initramfs"
+  grep -Fxq "builtin_initramfs_sha256=${initramfs_sha256}" \
+    "${device_out}/build-manifest.txt" || \
+    archneo_die "KERNEL manifest initramfs checksum mismatch"
+  initramfs_delivery="kernel-built-in"
+else
+  grep -Fxq 'initramfs_delivery=none-direct-root' \
+    "${device_out}/build-manifest.txt" || \
+    archneo_die "KERNEL manifest does not record the direct-root boot path"
+  initramfs_sha256="none"
+  initramfs_delivery="none-direct-root"
+fi
 grep -Fq "cmdline=root=PARTUUID=${ARCHNEO_ROOT_PART_GUID} rootfstype=ext4 " \
   "${device_out}/build-manifest.txt" || \
   archneo_die "KERNEL manifest does not use the root partition UUID"
@@ -152,6 +183,10 @@ install -m 0644 "${device_out}/KERNEL" "$mount_boot/KERNEL"
 install -m 0644 "${device_out}/KERNEL.md5" "$mount_boot/KERNEL.md5"
 install -m 0644 "${device_out}/KERNEL.sha256" "$mount_boot/KERNEL.sha256"
 install -m 0644 "${device_out}/build-manifest.txt" "$mount_boot/build-manifest.txt"
+if (( early_boot_diagnostics )); then
+  install -m 0644 "$initramfs" \
+    "$mount_boot/initramfs-linux-archneo.cpio.gz"
+fi
 sync
 
 umount "$mount_boot"
@@ -187,7 +222,8 @@ trap - EXIT
   printf 'root_uuid=%s\n' "$ARCHNEO_ROOT_FS_UUID"
   printf 'home_seed_size_mib=%s\n' "$ARCHNEO_HOME_SEED_SIZE_MIB"
   printf 'home_uuid=%s\n' "$ARCHNEO_HOME_FS_UUID"
-  printf 'initramfs_delivery=none-direct-root\n'
+  printf 'initramfs_delivery=%s\n' "$initramfs_delivery"
+  printf 'initramfs_sha256=%s\n' "$initramfs_sha256"
   printf 'rootfs_sha256=%s\n' "$(sha256sum -- "${ARCHNEO_CACHE_DIR}/downloads/ArchLinuxARM-aarch64-latest.tar.gz" | awk '{print $1}')"
   printf 'kernel_sha256=%s\n' "$(sha256sum -- "${device_out}/KERNEL" | awk '{print $1}')"
 } > "${device_out}/image-manifest.txt"

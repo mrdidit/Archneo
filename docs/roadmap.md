@@ -22,7 +22,9 @@ collaborator then reported that Pocknix's multi-DTB, direct-root SM8550 image
 boots on Pocket S 2K, with audio not working. Archneo now applies that low-level
 ABL envelope to a separate Pocket EVO profile while retaining ext4, Archneo
 userspace, and the official rolling Arch Linux ARM repositories. A Pocket EVO
-is locally available, so the immediate target is its `tty1` password setup.
+is locally available. Its first USB and microSD tests produced no systemd
+journal or userspace marker; the immediate target is now a FAT-persisted
+initramfs stage before returning to the `tty1` password setup.
 
 ## Phases
 

@@ -77,6 +77,14 @@ boots:
 | Systemd target | `multi-user.target` | reach TTY credential setup before graphical work |
 | Console | `ttyMSM0` and `tty0`, verbose logging | early bring-up evidence |
 
+The direct-root values above remain the ordinary image profile. After both USB
+and microSD EVO tests produced no userspace evidence, the next workflow
+artifact uses the controlled diagnostic exception in
+[ADR 0007](../decisions/0007-early-boot-diagnostic-initramfs.md): a functional
+initramfs is linked into Linux, the Android ramdisk is ROCKNIX's literal
+`dummy`, the root remains the same `PARTUUID`, and early stages are written to
+the `ROCKNIX` FAT filesystem.
+
 `make kernel` builds the common Linux image, modules, and every DTB represented
 by the pinned ROCKNIX SM8550 `.dts` files. Packaging concatenates those DTBs in
 locale-independent filename order. The essential Qualcomm SDHCI/MMC,

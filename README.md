@@ -43,6 +43,11 @@ Pocket EVO has its own build profile, ROCKNIX
 The ABL-facing FAT32 partition remains 2 GiB, named `system`, and labelled
 `ROCKNIX`. The installed ROCKNIX-ABL is a prerequisite and is left untouched.
 
+The first EVO USB and microSD tests produced no systemd journal or userspace
+marker. The active follow-up is therefore an explicitly named early-boot
+diagnostic image that records initramfs stages to the FAT filesystem before
+the real root or display is required.
+
 The image boots to `tty1` and asks independently for `root` and `deck`
 passwords before starting the normal login prompt. `deck` has
 password-protected sudo access. NetworkManager is installed and enabled, but
@@ -64,6 +69,7 @@ make verify
 make prepare-kernel
 make kernel
 sudo make image
+sudo make diagnostic-image
 ```
 
 Those commands now default to Pocket EVO. Pocket S 2K remains selectable with

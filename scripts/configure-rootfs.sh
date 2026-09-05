@@ -41,6 +41,7 @@ pacman -Syu --disable-sandbox --needed --noconfirm \
   bash \
   e2fsprogs \
   linux-firmware \
+  mkinitcpio \
   networkmanager \
   parted \
   sudo \

@@ -18,14 +18,14 @@ GitHub Actions downloads an outer artifact ZIP. Extract that ZIP once. The
 extracted directory contains the actual compressed disk image and its checksum:
 
 ```text
-Archneo-ayaneo-pocket-evo.img.gz
-Archneo-ayaneo-pocket-evo.img.gz.sha256
+Archneo-ayaneo-pocket-evo-early-boot-diagnostic.img.gz
+Archneo-ayaneo-pocket-evo-early-boot-diagnostic.img.gz.sha256
 ```
 
 From a terminal in that extracted directory, verify the image before writing:
 
 ```sh
-sha256sum --check Archneo-ayaneo-pocket-evo.img.gz.sha256
+sha256sum --check Archneo-ayaneo-pocket-evo-early-boot-diagnostic.img.gz.sha256
 ```
 
 Continue only if the result is `OK`. Do not extract the inner `.img.gz` when
@@ -34,7 +34,8 @@ using balenaEtcher; Etcher can decompress it while writing.
 ## Recommended: balenaEtcher
 
 1. Open balenaEtcher and choose **Flash from file**.
-2. Select `Archneo-ayaneo-pocket-evo.img.gz`, not the outer GitHub ZIP.
+2. Select `Archneo-ayaneo-pocket-evo-early-boot-diagnostic.img.gz`, not the
+   outer GitHub ZIP.
 3. Choose the removable microSD card as the target. Confirm its capacity and
    model before continuing.
 4. Select **Flash** and allow Etcher's validation phase to finish.
@@ -57,7 +58,7 @@ below, replace `/dev/sdX` with the verified whole-card device. A target such as
 `/dev/sdX1` is a partition and is wrong.
 
 ```sh
-gzip --decompress --stdout Archneo-ayaneo-pocket-evo.img.gz |
+gzip --decompress --stdout Archneo-ayaneo-pocket-evo-early-boot-diagnostic.img.gz |
   sudo dd of=/dev/sdX bs=16M iflag=fullblock status=progress conv=fsync
 sync
 ```
@@ -79,3 +80,16 @@ ROCKNIX-ABL. The intended first visible milestone is the Archneo `tty1` setup,
 which asks separately for `root` and `deck` passwords. There are no preset
 passwords. Let the first boot finish because `/home` expansion and persistent
 diagnostic capture run automatically.
+
+If the diagnostic image remains black, leave it running for at least two
+minutes before forcing it off. Return the card to an Ubuntu workstation, mount
+`ROCKNIX`, and inspect the pre-systemd evidence first:
+
+```sh
+boot="/media/$USER/ROCKNIX"
+find "$boot/archneo-diagnostics" -maxdepth 3 -type f -printf '%P  %s bytes\n'
+```
+
+Preserve the entire `archneo-diagnostics` directory before another test. Its
+absence means Linux did not reach the custom initramfs hook or the hook could
+not enumerate and mount the FAT filesystem.

@@ -69,6 +69,21 @@ Build the complete removable image after `make kernel`:
 sudo make image
 ```
 
+After a direct-root test produces no userspace evidence, build the separately
+named early-boot diagnostic image:
+
+```sh
+sudo make diagnostic-image
+```
+
+That variant retains the EVO root `PARTUUID` and complete appended DTB set,
+but links a generated mkinitcpio archive into Linux and writes pre-systemd
+stages below `/archneo-diagnostics` on the FAT filesystem. Its image is:
+
+```text
+out/ayaneo-pocket-evo/Archneo-ayaneo-pocket-evo-early-boot-diagnostic.img.gz
+```
+
 The image stage:
 
 1. downloads the generic Arch Linux ARM rootfs and verifies its detached
@@ -84,7 +99,7 @@ The image stage:
 5. creates and verifies the FAT32/ext4/ext4 disk image with GPT boot name
    `system`, FAT label `ROCKNIX`, `/KERNEL`, and both kernel checksums.
 
-The published output is:
+The ordinary direct-root output is:
 
 ```text
 out/ayaneo-pocket-evo/Archneo-ayaneo-pocket-evo.img.gz
@@ -119,8 +134,9 @@ contain spaces or colons.
 
 ## Continuous build
 
-The `Build Pocket EVO image` GitHub Actions workflow runs verification,
-`make kernel`, and the privileged image assembly path on relevant changes. It
+The `Build Pocket EVO diagnostic image` GitHub Actions workflow runs verification,
+`make kernel`, and the privileged early-boot diagnostic image path on relevant
+changes. It
 retains the compressed image and its manifests for 14 days. A successful
 workflow proves build and filesystem verification only; it is not hardware
 boot evidence or a supported release.

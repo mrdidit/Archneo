@@ -125,8 +125,8 @@ done
   archneo_die "home seed size must be a positive MiB value"
 [[ "$ARCHNEO_ROOTFS_SCHEMA" =~ ^[1-9][0-9]*$ ]] || \
   archneo_die "rootfs schema must be a positive integer"
-[[ "$ARCHNEO_ROOTFS_SCHEMA" == "5" ]] || \
-  archneo_die "rootfs schema must invalidate pre-NetworkManager staging roots"
+[[ "$ARCHNEO_ROOTFS_SCHEMA" == "6" ]] || \
+  archneo_die "rootfs schema must include the diagnostic mkinitcpio package"
 [[ "$ARCHNEO_ROOT_FS_UUID" != "$ARCHNEO_HOME_FS_UUID" ]] || \
   archneo_die "root and home filesystem UUIDs must be different"
 
@@ -172,6 +172,7 @@ done < <(
 configure_rootfs="${ARCHNEO_PROJECT_ROOT}/scripts/configure-rootfs.sh"
 for required_rootfs_line in \
   '  networkmanager \' \
+  '  mkinitcpio \' \
   '  wpa_supplicant' \
   'systemctl set-default multi-user.target' \
   '  NetworkManager.service \' \
@@ -202,5 +203,13 @@ grep -Fq -- "-name 'qcs8550-*.dts'" "$package_kernel" || \
 build_image="${ARCHNEO_PROJECT_ROOT}/scripts/build-image.sh"
 grep -Fq -- '--change-name=1:"$ROCKNIX_ABL_BOOT_PARTITION_NAME"' "$build_image" || \
   archneo_die "removable image does not use the ABL GPT partition name"
+grep -Fq 'ARCHNEO_EARLY_BOOT_DIAGNOSTICS' "$build_image" || \
+  archneo_die "image builder has no early-boot diagnostic mode"
+grep -Fq 'initramfs-linux-archneo.cpio.gz' "$build_image" || \
+  archneo_die "diagnostic initramfs is not copied to the inspection filesystem"
+
+workflow="${ARCHNEO_PROJECT_ROOT}/.github/workflows/kernel.yml"
+grep -Fq 'ARCHNEO_EARLY_BOOT_DIAGNOSTICS: "1"' "$workflow" || \
+  archneo_die "Pocket EVO workflow does not build the early-boot diagnostic image"
 
 archneo_log "repository verification passed"

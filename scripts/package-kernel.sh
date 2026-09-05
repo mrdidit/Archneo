@@ -71,7 +71,8 @@ if [[ -n "$builtin_initramfs" ]]; then
   ramdisk_kind="rocknix-dummy"
   initramfs_delivery="kernel-built-in"
   builtin_initramfs_sha256="$(sha256sum -- "$builtin_initramfs" | awk '{print $1}')"
-  root_argument="root=UUID=${ARCHNEO_ROOT_FS_UUID}"
+  root_argument="root=PARTUUID=${ARCHNEO_ROOT_PART_GUID}"
+  diagnostic_arguments="boot=LABEL=${ROCKNIX_ABL_BOOT_LABEL} rd.debug rd.log=all"
 else
   # The bring-up image follows the hardware-proven initramfs-free SM8550 path.
   # Linux can resolve a GPT PARTUUID directly; filesystem UUID resolution would
@@ -82,9 +83,10 @@ else
   initramfs_delivery="none-direct-root"
   builtin_initramfs_sha256="none"
   root_argument="root=PARTUUID=${ARCHNEO_ROOT_PART_GUID}"
+  diagnostic_arguments=""
 fi
 
-cmdline="${root_argument} rootfstype=ext4 rw rootwait console=ttyMSM0,115200n8 console=tty0 systemd.unit=multi-user.target systemd.show_status=1 loglevel=7 ignore_loglevel drm.debug=0x1ff log_buf_len=4M allow_mismatched_32bit_el0 fw_devlink.strict=1 pcie_ports=compat irqaffinity=0-2 cgroup.memory=nokmem,nosocket nosoftlockup usbcore.interrupt_interval_override=045e:028e:2"
+cmdline="${root_argument} rootfstype=ext4 rw rootwait ${diagnostic_arguments} console=ttyMSM0,115200n8 console=tty0 systemd.unit=multi-user.target systemd.show_status=1 loglevel=7 ignore_loglevel drm.debug=0x1ff log_buf_len=4M allow_mismatched_32bit_el0 fw_devlink.strict=1 pcie_ports=compat irqaffinity=0-2 cgroup.memory=nokmem,nosocket nosoftlockup usbcore.interrupt_interval_override=045e:028e:2"
 (( ${#cmdline} <= 511 )) || archneo_die "Android boot-image v0 command line exceeds 511 bytes"
 
 python3 "${mkbootimg_dir}/mkbootimg.py" \

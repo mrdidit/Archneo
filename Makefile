@@ -2,7 +2,7 @@ SHELL := /bin/bash
 
 .DEFAULT_GOAL := help
 
-.PHONY: help verify fetch-rocknix fetch-rootfs fetch-firmware prepare-kernel kernel rootfs image
+.PHONY: help verify fetch-rocknix fetch-rootfs fetch-firmware prepare-kernel kernel rootfs image diagnostic-image
 
 help:
 	@echo "Archneo bring-up targets:"
@@ -14,6 +14,7 @@ help:
 	@echo "  make kernel          Cross-build the Pocket EVO SM8550 KERNEL payload"
 	@echo "  make rootfs          Prepare the console-first rootfs after make kernel"
 	@echo "  make image           Build the complete removable image as root"
+	@echo "  make diagnostic-image Build an early-boot logging image as root"
 	@echo "  ARCHNEO_DEVICE=...   Override the default ayaneo-pocket-evo profile"
 
 verify:
@@ -39,3 +40,6 @@ rootfs:
 
 image:
 	@./scripts/build-image.sh
+
+diagnostic-image:
+	@ARCHNEO_EARLY_BOOT_DIAGNOSTICS=1 ./scripts/build-image.sh
