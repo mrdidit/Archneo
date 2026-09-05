@@ -2,10 +2,10 @@
 
 ## Scope
 
-The first Archneo platform is Qualcomm SM8550. The initial device order is:
+The first Archneo platform is Qualcomm SM8550. The active device order is:
 
-1. AYANEO Pocket S 2K
-2. AYANEO Pocket EVO
+1. AYANEO Pocket EVO
+2. AYANEO Pocket S 2K (deferred until local testing is practical)
 
 Both device profiles will share the SM8550 kernel, firmware, root filesystem,
 image-building code, and ROCKNIX-ABL boot contract wherever the hardware
@@ -19,10 +19,10 @@ initramfs, and complete removable image passed CI assembly before the active
 boot profile was changed. Both external- and built-in-initramfs hardware images
 remained on a black screen and left no systemd journal or userspace marker. A
 collaborator then reported that Pocknix's multi-DTB, direct-root SM8550 image
-boots on Pocket S 2K, with audio not working. The next Archneo image matches
-that low-level ABL envelope while retaining ext4, Archneo userspace, and the
-official rolling Arch Linux ARM repositories. Its first target is the `tty1`
-password setup.
+boots on Pocket S 2K, with audio not working. Archneo now applies that low-level
+ABL envelope to a separate Pocket EVO profile while retaining ext4, Archneo
+userspace, and the official rolling Arch Linux ARM repositories. A Pocket EVO
+is locally available, so the immediate target is its `tty1` password setup.
 
 ## Phases
 
@@ -46,7 +46,7 @@ scope.
 - Determine how the correct device tree is selected.
 - Define the kernel, initramfs, device-tree, and root-filesystem interfaces.
 - Validate the `system` GPT name, `ROCKNIX` FAT label, `KERNEL.md5`, appended
-  SM8550 DTB set, and direct-root `PARTUUID` together on Pocket S 2K.
+  SM8550 DTB set, and direct-root `PARTUUID` together on Pocket EVO.
 
 ### 2. Create reproducible build inputs
 
@@ -55,7 +55,7 @@ scope.
 - Track kernel configuration, device trees, modules, and firmware explicitly.
 - Record licences and provenance for every redistributed component.
 
-### 3. Boot the Pocket S 2K from removable media
+### 3. Boot the Pocket EVO from removable media
 
 - Boot without installing Archneo to internal storage.
 - Reach the `tty1` credential setup, set distinct `root` and `deck` passwords,
@@ -65,7 +65,7 @@ scope.
 - Mount the intended Arch root filesystem.
 - Verify clean shutdown and repeatable cold boots.
 
-### 4. Validate Pocket S 2K hardware
+### 4. Validate Pocket EVO hardware
 
 - Display, backlight, touchscreen, and orientation
 - Internal and removable storage
@@ -77,11 +77,11 @@ scope.
 - Battery, charging, thermal sensors, and fan control
 - Suspend or the documented alternative
 
-### 5. Add the Pocket EVO profile
+### 5. Resume Pocket S 2K bring-up
 
-- Include and select the Pocket EVO device tree.
+- Build the retained Pocket S 2K device profile.
 - Repeat the complete hardware test matrix.
-- Verify that adding EVO support does not regress Pocket S 2K.
+- Verify that shared EVO changes do not regress Pocket S 2K.
 
 ### 6. Produce installable artifacts
 

@@ -1,7 +1,7 @@
 # ROCKNIX-ABL boot contract
 
 This document separates facts visible in the public ROCKNIX build system from
-assumptions that still require a Pocket S 2K hardware test. The distinction is
+assumptions that still require an Archneo hardware test. The distinction is
 important: the public [`ROCKNIX/abl`](https://github.com/ROCKNIX/abl)
 repository publishes signed binaries, but its release workflow builds the
 loader from the non-public `ROCKNIX/LinuxLoader` repository. Archneo therefore
@@ -54,11 +54,12 @@ Relevant pinned sources:
 - [qcom-ABL kernel packaging](https://github.com/ROCKNIX/distribution/blob/13e18947d2d41b17015f5df18405adefc4dfb2f5/projects/ROCKNIX/packages/linux/package.mk)
 - [disk image construction](https://github.com/ROCKNIX/distribution/blob/13e18947d2d41b17015f5df18405adefc4dfb2f5/scripts/mkimage)
 
-## Active Pocket S 2K compatibility profile
+## Active Pocket EVO compatibility profile
 
-The next Pocket S 2K image follows the SM8550 envelope reported booting on the
-same hardware while changing only the parts needed for an ordinary Arch
-installation:
+The Pocket EVO image follows the SM8550 envelope reported booting on Pocket S
+2K while changing only the parts needed for an ordinary Arch installation.
+The report is evidence about the shared ABL format, not evidence that EVO
+boots:
 
 | Item | Active Archneo value | Reason |
 | --- | --- | --- |
@@ -67,7 +68,7 @@ installation:
 | FAT label | `ROCKNIX` | required ROCKNIX-ABL compatibility contract |
 | FAT GPT name | `system` | match the removable ROCKNIX/Pocknix ABL layout |
 | Boot payload | `/KERNEL`, `/KERNEL.md5`, `/KERNEL.sha256` | ABL compatibility plus Archneo provenance |
-| DTBs in payload | complete pinned ROCKNIX SM8550 set | let ABL select the Pocket S 2K model from the proven layout |
+| DTBs in payload | complete pinned ROCKNIX SM8550 set | let ABL select the Pocket EVO model from the established layout |
 | Root partition | 30 GiB ext4 | normal writable Arch root |
 | Home partition | ext4 seed, expanded to remaining media | independent user data without Btrfs |
 | Kernel-built-in initramfs | none | remove early userspace from this controlled test |
@@ -89,12 +90,12 @@ is recorded in [ADR 0004](../decisions/0004-built-in-initramfs.md); the active
 direct-root response is [ADR 0005](../decisions/0005-direct-root-abl-parity.md).
 
 The removable image uses stable, machine-readable filesystem and partition
-UUIDs from
-[`config/platform.env`](../../config/platform.env). `/etc/fstab` names `/boot`,
-`/`, and `/home` by filesystem UUID. The final home partition expands on first
-boot without regenerating its UUID. Only the pre-userspace `root=` argument
-uses the root GPT UUID. The FAT label remains `ROCKNIX` regardless of its FAT
-filesystem UUID or its separate GPT name, `system`.
+UUIDs from the selected file in
+[`config/devices`](../../config/devices). `/etc/fstab` names `/boot`, `/`, and
+`/home` by filesystem UUID. The final home partition expands on first boot
+without regenerating its UUID. Only the pre-userspace `root=` argument uses the
+root GPT UUID. The FAT label remains `ROCKNIX` regardless of its FAT filesystem
+UUID or its separate GPT name, `system`.
 
 ## External Pocket S 2K boot evidence
 
@@ -107,7 +108,7 @@ yet been recorded, and its userspace falls back to RP6 board settings.
 
 ## Hardware questions still open
 
-The next controlled Archneo boot must establish:
+The next controlled Pocket EVO boot must establish:
 
 - whether Archneo's matching appended-DTB envelope reaches Linux;
 - whether Linux mounts the intended ext4 root by GPT UUID;

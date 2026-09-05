@@ -12,7 +12,7 @@ generic-image credentials.
 
 ## Decision
 
-The Pocket S 2K removable image uses GPT with:
+Each SM8550 device-profile image uses GPT with:
 
 1. a 2048 MiB FAT32 `/boot`, beginning at sector 32768 and labelled exactly
    `ROCKNIX`;
@@ -42,7 +42,7 @@ and systemd-networkd is disabled to avoid competing network managers.
 - The direct-root bring-up image needs the Qualcomm MMC/SDHCI path and ext4
   built into Linux. A functional initramfs is not required for this profile.
 - `/home` can grow independently while `/` remains predictably sized.
-- A cloned removable image has deterministic filesystem identities. A future
+- Each device profile has distinct deterministic filesystem identities. A future
   internal installer must generate new per-install UUIDs to prevent collisions
   and must rebuild the payload command line accordingly.
 - Resizing root later is possible with normal partition and ext4 tools, but it

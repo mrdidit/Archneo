@@ -7,6 +7,7 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 source "${SCRIPT_DIR}/lib/common.sh"
 archneo_load_sources
 archneo_load_platform
+archneo_load_device
 
 [[ "$(id -u)" == "0" ]] || archneo_die "rootfs preparation must run as root"
 
@@ -14,7 +15,7 @@ for command in bsdtar chroot find mount mountpoint qemu-aarch64-static rsync sha
   archneo_need_command "$command"
 done
 
-device="${ARCHNEO_DEVICE:-ayaneo-pocket-s-2k}"
+device="$ARCHNEO_DEVICE"
 device_out="${ARCHNEO_BUILD_DIR}/artifacts/${device}"
 modules_root="${device_out}/rootfs-overlay/lib/modules"
 rootfs="${ARCHNEO_BUILD_DIR}/rootfs/${device}"
@@ -38,7 +39,8 @@ else
   existing_schema=""
 fi
 
-if [[ "$existing_schema" == "$ARCHNEO_ROOTFS_SCHEMA:$kernel_release" ]]; then
+rootfs_identity="${ARCHNEO_ROOTFS_SCHEMA}:${kernel_release}:${ARCHNEO_HOME_FS_UUID}"
+if [[ "$existing_schema" == "$rootfs_identity" ]]; then
   archneo_log "using prepared persistent rootfs: ${rootfs}"
   exit 0
 fi
@@ -65,6 +67,14 @@ install -d -m 0755 "${rootfs}/usr/lib/modules"
 rsync -aHAX --chown=0:0 "${modules_root}/." "${rootfs}/usr/lib/modules/"
 rsync -aHAX --chown=0:0 "${ARCHNEO_PROJECT_ROOT}/rootfs-overlay/." "$rootfs/"
 chown 0:0 "$rootfs"
+
+{
+  printf '# Generated from the selected Archneo device profile.\n'
+  printf 'ARCHNEO_DEVICE=%q\n' "$ARCHNEO_DEVICE"
+  printf 'ARCHNEO_HOME_FS_UUID=%q\n' "$ARCHNEO_HOME_FS_UUID"
+} > "${rootfs}/etc/archneo.conf"
+chown 0:0 "${rootfs}/etc/archneo.conf"
+chmod 0644 "${rootfs}/etc/archneo.conf"
 
 [[ -L "${rootfs}/lib" && "$(readlink "${rootfs}/lib")" == "usr/lib" ]] || \
   archneo_die "prepared rootfs lost its /lib -> usr/lib compatibility symlink"
@@ -154,6 +164,6 @@ rootfs_sha="$(sha256sum -- "$rootfs_archive" | awk '{print $1}')"
   printf 'upstream_firmware_source=archlinuxarm-linux-firmware-package\n'
   printf 'rocknix_extra_firmware_commit=%s\n' "$ROCKNIX_EXTRA_FIRMWARE_COMMIT"
 } > "${rootfs}/usr/share/archneo/rootfs-build.txt"
-printf '%s:%s\n' "$ARCHNEO_ROOTFS_SCHEMA" "$kernel_release" > "${rootfs}/.archneo-complete"
+printf '%s\n' "$rootfs_identity" > "${rootfs}/.archneo-complete"
 
 archneo_log "prepared direct-root Archneo rootfs: ${rootfs}"

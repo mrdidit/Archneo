@@ -57,6 +57,21 @@ archneo_load_platform() {
   source "${ARCHNEO_PROJECT_ROOT}/config/platform.env"
 }
 
+archneo_load_device() {
+  local profile
+
+  ARCHNEO_DEVICE="${ARCHNEO_DEVICE:-${ARCHNEO_DEFAULT_DEVICE:?default device is unset}}"
+  [[ "$ARCHNEO_DEVICE" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]] || \
+    archneo_die "invalid ARCHNEO_DEVICE: ${ARCHNEO_DEVICE}"
+  profile="${ARCHNEO_PROJECT_ROOT}/config/devices/${ARCHNEO_DEVICE}.env"
+  [[ -f "$profile" ]] || archneo_die "unsupported ARCHNEO_DEVICE: ${ARCHNEO_DEVICE}"
+
+  # shellcheck disable=SC1090
+  source "$profile"
+  [[ "${ARCHNEO_DEVICE_ID:-}" == "$ARCHNEO_DEVICE" ]] || \
+    archneo_die "device profile identity mismatch: ${profile}"
+}
+
 archneo_verify_sha256() {
   local expected="$1"
   local file="$2"

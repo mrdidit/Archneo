@@ -5,7 +5,7 @@ CONFIG_DEFAULT_HOSTNAME="archneo"
 CONFIG_LOCALVERSION="-archneo"
 # CONFIG_LOCALVERSION_AUTO is not set
 
-# The Pocket S 2K bring-up image mounts its ext4 root directly from Linux.
+# The SM8550 bring-up images mount their ext4 root directly from Linux.
 # Keep the complete removable-media discovery and root-mount path built in.
 CONFIG_DEVTMPFS=y
 CONFIG_DEVTMPFS_MOUNT=y

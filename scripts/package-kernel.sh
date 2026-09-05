@@ -7,21 +7,11 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 source "${SCRIPT_DIR}/lib/common.sh"
 archneo_load_sources
 archneo_load_platform
+archneo_load_device
 
-device="${ARCHNEO_DEVICE:-ayaneo-pocket-s-2k}"
+device="$ARCHNEO_DEVICE"
 package_kind="${ARCHNEO_PACKAGE_KIND:-direct-root}"
-
-case "$device" in
-  ayaneo-pocket-s-2k)
-    selected_dtb_name="qcs8550-ayaneo-pockets2k.dtb"
-    ;;
-  ayaneo-pocket-evo)
-    selected_dtb_name="qcs8550-ayaneo-pocketevo.dtb"
-    ;;
-  *)
-    archneo_die "unsupported ARCHNEO_DEVICE: ${device}"
-    ;;
-esac
+selected_dtb_name="$ARCHNEO_SELECTED_DTB"
 
 for command in cpio find gzip md5sum python3 sed sha256sum sort tar; do
   archneo_need_command "$command"
@@ -63,8 +53,8 @@ fi
 
 # ROCKNIX-ABL consumes an Android boot-image-v0 payload containing a gzip
 # kernel followed by the complete, deterministically ordered SM8550 DTB set.
-# A Pocket S 2K hardware report confirms that ABL exposes and boots that model
-# when it is present in the appended set; retain ROCKNIX/Pocknix parity here.
+# A Pocket S 2K hardware report confirms that ABL exposes a selected SM8550
+# model when it is present in the appended set. Retain that envelope for EVO.
 gzip -9 -n -c -- "$image" > "$kernel_gz"
 for dtb_name in "${dtb_names[@]}"; do
   cat -- "${dt_build_dir}/${dtb_name}" >> "$kernel_gz"

@@ -4,10 +4,10 @@
 
 - Archneo identifier: `ayaneo-pocket-s-2k`
 - SoC/platform: Qualcomm SM8550
-- Bring-up priority: first
-- Current Archneo status: previous image assembly passed, but Archneo has not
-  reached a confirmed console; the next image adopts a separately reported
-  working multi-DTB/direct-root ABL envelope and targets `tty1`
+- Bring-up priority: deferred after the initial remote tests
+- Current Archneo status: direct-root image assembly passed, but Archneo has
+  not reached a confirmed console; the profile remains buildable while local
+  Pocket EVO bring-up is active
 
 This page describes the original AYANEO Pocket S with the 2K display. It does
 not describe the AYANEO Pocket S2, which uses SM8650.
@@ -28,8 +28,8 @@ At the revision recorded below, the device tree describes:
 Source:
 [ROCKNIX Pocket S 2K device tree](https://github.com/ROCKNIX/distribution/blob/13e18947d2d41b17015f5df18405adefc4dfb2f5/projects/ROCKNIX/devices/SM8550/linux/dts/qcom/qcs8550-ayaneo-pockets2k.dts)
 
-This revision is the selected first bring-up baseline. The build scripts record
-it with the Linux source checksum and selected DTB in each artifact manifest.
+This revision remains the S 2K profile baseline. The build scripts record it
+with the Linux source checksum and selected DTB in each artifact manifest.
 
 ## Bring-up record
 
@@ -109,4 +109,8 @@ in [Pocket S 2K black-screen diagnostics](../diagnostics/pocket-s-2k-display.md)
   rolling Arch Linux ARM repositories with no connection preconfigured
 - Unchanged: installed ABL, ext4 `/` and `/home`, filesystem-UUID `fstab`, and
   Archneo's own userspace/package policy
-- Status: implementation complete; CI build and hardware test pending
+- CI result: GitHub Actions run
+  [`33206667662`](https://github.com/mrdidit/Archneo/actions/runs/33206667662)
+  completed the direct-root payload, image, verification, and artifact upload
+  at commit `a935356b941f3b92b91347262ff39bb2677b6152`
+- Hardware status: deferred; this direct-root image was not locally tested

@@ -45,7 +45,7 @@ ROCKNIX patch stack, SM8550 configuration, and DT sources:
 make prepare-kernel
 ```
 
-Cross-build the Pocket S 2K kernel, every pinned ROCKNIX SM8550 DTB, and common
+Cross-build the Pocket EVO kernel, every pinned ROCKNIX SM8550 DTB, and common
 modules, then create the Android boot-image-v0 direct-root payload:
 
 ```sh
@@ -55,7 +55,7 @@ make kernel
 The primary output is:
 
 ```text
-out/ayaneo-pocket-s-2k/KERNEL
+out/ayaneo-pocket-evo/KERNEL
 ```
 
 This payload contains a valid empty `newc` ramdisk, the complete appended DTB
@@ -87,7 +87,7 @@ The image stage:
 The published output is:
 
 ```text
-out/ayaneo-pocket-s-2k/Archneo-ayaneo-pocket-s-2k.img.gz
+out/ayaneo-pocket-evo/Archneo-ayaneo-pocket-evo.img.gz
 ```
 
 Archneo does not overlay `/etc/pacman.conf`. The configuration and mirror list
@@ -99,11 +99,13 @@ The compressed image, SHA-256 file, partition-table JSON, and build manifests
 are retained in `out`. The large sparse raw image remains in the persistent
 build directory rather than `/tmp`.
 
-Pocket EVO is recognized by the build script for later development, but it is
-not the default and does not yet constitute a supported artifact:
+Pocket EVO is the active default profile. Pocket S 2K remains available as an
+explicit override; producing either artifact does not constitute hardware
+support:
 
 ```sh
-ARCHNEO_DEVICE=ayaneo-pocket-evo make kernel
+ARCHNEO_DEVICE=ayaneo-pocket-s-2k make kernel
+sudo ARCHNEO_DEVICE=ayaneo-pocket-s-2k make image
 ```
 
 `CROSS_COMPILE`, `JOBS`, and `ARCHNEO_BUILD_DIR` may be overridden. Their
@@ -113,7 +115,7 @@ contain spaces or colons.
 
 ## Continuous build
 
-The `Build Pocket S 2K image` GitHub Actions workflow runs verification,
+The `Build Pocket EVO image` GitHub Actions workflow runs verification,
 `make kernel`, and the privileged image assembly path on relevant changes. It
 retains the compressed image and its manifests for 14 days. A successful
 workflow proves build and filesystem verification only; it is not hardware
@@ -202,8 +204,9 @@ ROCKNIX build:
 Files ending in `.disabled` are deliberately excluded. The entire SM8550 DTS
 overlay is then copied into the kernel tree. Every `qcs8550-*.dts` supplied by
 that pinned overlay is built and its DTB is appended in deterministic filename
-order; the manifest separately records Pocket S 2K as the selected Archneo
-device profile.
+order; the manifest separately records Pocket EVO as the selected Archneo
+device profile. Per-device DTB selection and stable media identities live in
+[`config/devices`](../config/devices).
 
 The active bring-up configuration clears `CONFIG_INITRAMFS_SOURCE`, sets the
 hostname/local version, and pins devtmpfs, Qualcomm MMC/SDHCI, and ext4 as

@@ -5,9 +5,9 @@ handhelds. It aims to combine an Arch userspace with device support derived
 from ROCKNIX and a ROCKNIX-ABL-compatible boot layout.
 
 > [!WARNING]
-> Archneo is at the research and bring-up stage. Complete Pocket S 2K image
-> assembly passes CI, but Archneo has not yet reached a confirmed TTY on
-> hardware. It does not install or modify ABL.
+> Archneo is at the research and bring-up stage. Its shared SM8550 image
+> assembly has passed CI, but Archneo has not yet reached a confirmed TTY on
+> Pocket EVO hardware. It does not install or modify ABL.
 
 ## Goals
 
@@ -19,11 +19,10 @@ from ROCKNIX and a ROCKNIX-ABL-compatible boot layout.
 
 ## Status
 
-The initial platform is Qualcomm SM8550. Device bring-up will proceed in this
-order:
+The initial platform is Qualcomm SM8550. The active device order is:
 
-1. AYANEO Pocket S 2K (`ayaneo-pocket-s-2k`)
-2. AYANEO Pocket EVO (`ayaneo-pocket-evo`)
+1. AYANEO Pocket EVO (`ayaneo-pocket-evo`) — active, locally testable
+2. AYANEO Pocket S 2K (`ayaneo-pocket-s-2k`) — deferred, still buildable
 
 The similarly named AYANEO Pocket S2 is an SM8650 device and is not one of
 these initial targets. Source preparation and the earlier single-DTB `KERNEL`
@@ -32,12 +31,17 @@ passed CI before the active boot-profile change. A hardware test of the
 corrected built-in-initramfs image still left the display black and produced no
 systemd journal or userspace marker.
 
-An external Pocknix SM8550 image has since been reported booting on Pocket S
+An external Pocknix SM8550 image was reported booting on Pocket S
 2K when that model is selected in ROCKNIX-ABL, although its audio does not
-work. The active Archneo test now copies only its proven low-level envelope:
+work. The Pocket EVO bring-up reuses only that proven low-level envelope:
 the full pinned ROCKNIX SM8550 DTB set, `KERNEL.md5`, and direct ext4 root
 mounting. Archneo retains its own ext4 layout, userspace, and the official
 rolling Arch Linux ARM repositories; no Pocknix package configuration is used.
+
+Pocket EVO has its own build profile, ROCKNIX
+`qcs8550-ayaneo-pocketevo.dtb`, and deterministic filesystem/GPT identities.
+The ABL-facing FAT32 partition remains 2 GiB, named `system`, and labelled
+`ROCKNIX`. The installed ROCKNIX-ABL is a prerequisite and is left untouched.
 
 The image boots to `tty1` and asks independently for `root` and `deck`
 passwords before starting the normal login prompt. `deck` has
@@ -61,6 +65,9 @@ make prepare-kernel
 make kernel
 sudo make image
 ```
+
+Those commands now default to Pocket EVO. Pocket S 2K remains selectable with
+`ARCHNEO_DEVICE=ayaneo-pocket-s-2k`.
 
 See [building Archneo](docs/building.md) for host dependencies, outputs, and
 the current reproducibility boundary.

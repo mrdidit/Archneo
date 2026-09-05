@@ -6,23 +6,14 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 # shellcheck source=scripts/lib/common.sh
 source "${SCRIPT_DIR}/lib/common.sh"
 archneo_load_sources
+archneo_load_platform
+archneo_load_device
 
 CROSS_COMPILE="${CROSS_COMPILE:-aarch64-linux-gnu-}"
 JOBS="${JOBS:-$(nproc)}"
-device="${ARCHNEO_DEVICE:-ayaneo-pocket-s-2k}"
+device="$ARCHNEO_DEVICE"
 initramfs="${ARCHNEO_INITRAMFS:-}"
-
-case "$device" in
-  ayaneo-pocket-s-2k)
-    dtb_name="qcs8550-ayaneo-pockets2k.dtb"
-    ;;
-  ayaneo-pocket-evo)
-    dtb_name="qcs8550-ayaneo-pocketevo.dtb"
-    ;;
-  *)
-    archneo_die "unsupported ARCHNEO_DEVICE: ${device}"
-    ;;
-esac
+dtb_name="$ARCHNEO_SELECTED_DTB"
 
 for command in "${CROSS_COMPILE}gcc" cmp grep make nproc sha256sum; do
   archneo_need_command "$command"

@@ -7,9 +7,57 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 source "${SCRIPT_DIR}/lib/common.sh"
 archneo_load_sources
 archneo_load_platform
+archneo_load_device
 
 is_sha256() { [[ "$1" =~ ^[0-9a-f]{64}$ ]]; }
 is_git_commit() { [[ "$1" =~ ^[0-9a-f]{40}$ ]]; }
+
+validate_device_profile() (
+  local expected_id profile="$1"
+
+  unset ARCHNEO_DEVICE_ID ARCHNEO_DEVICE_NAME ARCHNEO_SELECTED_DTB \
+    ARCHNEO_BOOT_FS_UUID ARCHNEO_ROOT_FS_UUID ARCHNEO_HOME_FS_UUID \
+    ARCHNEO_DISK_GUID ARCHNEO_BOOT_PART_GUID ARCHNEO_ROOT_PART_GUID \
+    ARCHNEO_HOME_PART_GUID
+  # shellcheck disable=SC1090
+  source "$profile"
+  expected_id="$(basename -- "$profile" .env)"
+
+  [[ "${ARCHNEO_DEVICE_ID:-}" == "$expected_id" ]] || \
+    archneo_die "device profile identity does not match its filename: ${profile}"
+  [[ -n "${ARCHNEO_DEVICE_NAME:-}" ]] || \
+    archneo_die "device profile has no display name: ${profile}"
+  case "$ARCHNEO_DEVICE_ID:$ARCHNEO_SELECTED_DTB" in
+    ayaneo-pocket-s-2k:qcs8550-ayaneo-pockets2k.dtb | \
+    ayaneo-pocket-evo:qcs8550-ayaneo-pocketevo.dtb)
+      ;;
+    *)
+      archneo_die "unexpected device-tree mapping in ${profile}"
+      ;;
+  esac
+  [[ "$ARCHNEO_BOOT_FS_UUID" =~ ^[0-9A-F]{4}-[0-9A-F]{4}$ ]] || \
+    archneo_die "invalid FAT filesystem UUID in ${profile}"
+  for filesystem_uuid in "$ARCHNEO_ROOT_FS_UUID" "$ARCHNEO_HOME_FS_UUID"; do
+    [[ "$filesystem_uuid" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$ ]] || \
+      archneo_die "invalid ext4 filesystem UUID in ${profile}: ${filesystem_uuid}"
+  done
+  for partition_guid in \
+    "$ARCHNEO_DISK_GUID" \
+    "$ARCHNEO_BOOT_PART_GUID" \
+    "$ARCHNEO_ROOT_PART_GUID" \
+    "$ARCHNEO_HOME_PART_GUID"; do
+    [[ "$partition_guid" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$ ]] || \
+      archneo_die "invalid GPT UUID in ${profile}: ${partition_guid}"
+  done
+  [[ "$ARCHNEO_ROOT_FS_UUID" != "$ARCHNEO_HOME_FS_UUID" ]] || \
+    archneo_die "root and home filesystem UUIDs collide in ${profile}"
+)
+
+[[ "$ARCHNEO_DEFAULT_DEVICE" == "ayaneo-pocket-evo" ]] || \
+  archneo_die "Pocket EVO must remain the active bring-up target"
+for device_profile in "${ARCHNEO_PROJECT_ROOT}"/config/devices/*.env; do
+  validate_device_profile "$device_profile"
+done
 
 is_git_commit "$ROCKNIX_DISTRIBUTION_COMMIT" || \
   archneo_die "ROCKNIX_DISTRIBUTION_COMMIT is not a full Git revision"
@@ -82,9 +130,11 @@ done
 [[ "$ARCHNEO_ROOT_FS_UUID" != "$ARCHNEO_HOME_FS_UUID" ]] || \
   archneo_die "root and home filesystem UUIDs must be different"
 
-grep -Fxq "ARCHNEO_HOME_FS_UUID=\"${ARCHNEO_HOME_FS_UUID}\"" \
-  "${ARCHNEO_PROJECT_ROOT}/rootfs-overlay/etc/archneo.conf" || \
-  archneo_die "runtime home UUID disagrees with platform.env"
+[[ ! -e "${ARCHNEO_PROJECT_ROOT}/rootfs-overlay/etc/archneo.conf" ]] || \
+  archneo_die "runtime identity must be generated from the selected device profile"
+grep -Fq "printf 'ARCHNEO_HOME_FS_UUID=%q" \
+  "${ARCHNEO_PROJECT_ROOT}/scripts/prepare-rootfs.sh" || \
+  archneo_die "rootfs builder does not write the selected home UUID"
 
 for config_line in \
   'CONFIG_INITRAMFS_SOURCE=""' \

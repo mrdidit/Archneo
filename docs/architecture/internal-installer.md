@@ -34,4 +34,4 @@ unchanged ROCKNIX-ABL contract.
 
 The installer will not install, update, or repair ABL and will not run as a
 side effect of any build or update command. Implementation starts only after a
-removable Archneo image boots repeatably on the Pocket S 2K.
+removable Archneo image boots repeatably on the active Pocket EVO target.

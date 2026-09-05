@@ -7,6 +7,7 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 source "${SCRIPT_DIR}/lib/common.sh"
 archneo_load_sources
 archneo_load_platform
+archneo_load_device
 
 [[ "$(id -u)" == "0" ]] || archneo_die "disk-image construction must run as root"
 
@@ -15,7 +16,7 @@ for command in blkid e2fsck fsck.vfat grep gzip losetup md5sum mkfs.ext4 mkfs.vf
   archneo_need_command "$command"
 done
 
-device="${ARCHNEO_DEVICE:-ayaneo-pocket-s-2k}"
+device="$ARCHNEO_DEVICE"
 rootfs="${ARCHNEO_BUILD_DIR}/rootfs/${device}"
 device_out="${ARCHNEO_OUT_DIR}/${device}"
 image_work_dir="${ARCHNEO_BUILD_DIR}/images/${device}"

@@ -1,6 +1,6 @@
 # ADR 0001: Bring up the Pocket S 2K first
 
-- Status: accepted
+- Status: superseded by [ADR 0006](0006-pocket-evo-active-bring-up.md)
 - Date: 2026-08-27
 
 ## Context

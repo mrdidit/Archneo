@@ -11,9 +11,10 @@ help:
 	@echo "  make fetch-rootfs    Fetch and signature-verify Arch Linux ARM"
 	@echo "  make fetch-firmware  Fetch checksum-pinned firmware archives"
 	@echo "  make prepare-kernel  Fetch Linux, apply ROCKNIX patches, and copy DTs"
-	@echo "  make kernel          Cross-build the direct-root SM8550 KERNEL payload"
+	@echo "  make kernel          Cross-build the Pocket EVO SM8550 KERNEL payload"
 	@echo "  make rootfs          Prepare the console-first rootfs after make kernel"
 	@echo "  make image           Build the complete removable image as root"
+	@echo "  ARCHNEO_DEVICE=...   Override the default ayaneo-pocket-evo profile"
 
 verify:
 	@./scripts/verify.sh

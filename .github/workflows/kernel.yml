@@ -1,4 +1,4 @@
-name: Build Pocket S 2K image
+name: Build Pocket EVO image
 
 on:
   workflow_dispatch:
@@ -22,8 +22,11 @@ on:
 permissions:
   contents: read
 
+env:
+  ARCHNEO_DEVICE: ayaneo-pocket-evo
+
 jobs:
-  pocket-s-2k:
+  pocket-evo:
     runs-on: ubuntu-24.04
     timeout-minutes: 180
 
@@ -64,7 +67,7 @@ jobs:
             rsync \
             xz-utils
 
-      - name: Build Pocket S 2K ABL payload
+      - name: Build Pocket EVO ABL payload
         env:
           ARCHNEO_BUILD_DIR: ${{ github.workspace }}/.ci-build
         run: make kernel
@@ -76,15 +79,16 @@ jobs:
           ARCHNEO_OUT_DIR: ${{ github.workspace }}/out
         run: |
           sudo env \
+            ARCHNEO_DEVICE="$ARCHNEO_DEVICE" \
             ARCHNEO_BUILD_DIR="$ARCHNEO_BUILD_DIR" \
             ARCHNEO_CACHE_DIR="$ARCHNEO_CACHE_DIR" \
             ARCHNEO_OUT_DIR="$ARCHNEO_OUT_DIR" \
             ./scripts/build-image.sh
 
-      - name: Upload Pocket S 2K image and manifests
+      - name: Upload Pocket EVO image and manifests
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: archneo-image-ayaneo-pocket-s-2k-${{ github.sha }}
-          path: out/ayaneo-pocket-s-2k/
+          name: archneo-image-ayaneo-pocket-evo-${{ github.sha }}
+          path: out/ayaneo-pocket-evo/
           if-no-files-found: error
           retention-days: 14
