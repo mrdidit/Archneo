@@ -65,9 +65,9 @@ ROCKNIX-ABL.
 
 | Area | Status | First evidence required |
 | --- | --- | --- |
-| ABL payload selection | Untested | ABL selection plus observed handoff |
+| ABL payload selection | Attempted; handoff unproven | ABL selection plus observed handoff |
 | Kernel entry and ext4 root | Untested | journal or `/var/lib/archneo/userspace-reached` |
-| Display/TTY | Untested | visible first-boot password prompt |
+| Display/TTY | Qualcomm splash retained on USB-media attempt | visible first-boot password prompt |
 | Touchscreen | Untested | evdev device and coordinate test |
 | Internal/removable storage | Untested | `lsblk`, mount, and I/O observations |
 | Controls and rumble | Untested | input-device/event mapping |
@@ -79,3 +79,22 @@ ROCKNIX-ABL.
 
 The complete matrix must be filled from Pocket EVO observations before the
 device is described as supported.
+
+## First hardware attempt
+
+- Date reported: 2026-09-05
+- Image: GitHub Actions run
+  [`33961866086`](https://github.com/mrdidit/Archneo/actions/runs/33961866086),
+  commit `57ca9142fc6c6e9b34158c824d1fcbded66aac78`
+- Medium: removable USB storage connected to Pocket EVO
+- Observation: the unit vibrated and remained on the Qualcomm splash; no
+  Archneo TTY was visible
+- Diagnostic limitation: the USB storage occupied the wired port, and this
+  image does not configure ADB, USB serial, or USB networking
+- Interpretation: neither vibration nor a retained firmware splash proves
+  Linux entry. The kernel configuration contains built-in SCSI disk, USB
+  storage, xHCI, Qualcomm DWC3, SD/MMC, and ext4 support, so the observation
+  does not prove a missing USB-storage driver.
+- Next controlled change: write the identical artifact to microSD, remove the
+  USB storage, wait for first-boot work, then inspect the card for persistent
+  userspace markers and journal files.
