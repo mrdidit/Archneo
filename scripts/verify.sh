@@ -223,6 +223,12 @@ grep -Fq 'archneo_diag_setup_usb_acm' "$diagnostic_hook" || \
   archneo_die "initramfs hook does not configure USB ACM"
 grep -Fq 'Archneo Early Boot Console' "$diagnostic_hook" || \
   archneo_die "USB ACM diagnostic product identity is missing"
+grep -Fq 'ARCHNEO_DIAG_USB_MODE="/sys/kernel/debug/usb/a600000.usb/mode"' \
+  "$diagnostic_hook" || \
+  archneo_die "USB ACM diagnostic does not use the SM8550 peripheral-mode fallback"
+grep -Fq "printf 'peripheral\\n' > \"\$ARCHNEO_DIAG_USB_MODE\"" \
+  "$diagnostic_hook" || \
+  archneo_die "USB ACM diagnostic does not force Qualcomm peripheral mode"
 
 usb_firstboot_override="${ARCHNEO_PROJECT_ROOT}/rootfs-overlay/usr/share/archneo/diagnostics/firstboot-usb-console.conf"
 grep -Fxq 'TTYPath=/dev/ttyGS0' "$usb_firstboot_override" || \

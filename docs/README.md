@@ -10,6 +10,7 @@ and known limitations are part of the deliverable.
 - [Bring-up roadmap](roadmap.md)
 - [Building Archneo](building.md)
 - [Writing an Archneo removable image](writing-removable-media.md)
+- [Thorch implementation review](research/thorch.md)
 - [Pocket S 2K black-screen diagnostics](diagnostics/pocket-s-2k-display.md)
 - [ROCKNIX-ABL boot contract](architecture/boot-contract.md)
 - [Planned internal-storage installer](architecture/internal-installer.md)

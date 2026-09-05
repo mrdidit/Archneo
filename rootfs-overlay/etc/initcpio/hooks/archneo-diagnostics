@@ -4,6 +4,7 @@ ARCHNEO_DIAG_MOUNT="/run/archneo-boot"
 ARCHNEO_DIAG_BOOT_ID="$(cat /proc/sys/kernel/random/boot_id 2>/dev/null)"
 [ -n "$ARCHNEO_DIAG_BOOT_ID" ] || ARCHNEO_DIAG_BOOT_ID="unknown-boot"
 ARCHNEO_DIAG_GADGET="/sys/kernel/config/usb_gadget/archneo"
+ARCHNEO_DIAG_USB_MODE="/sys/kernel/debug/usb/a600000.usb/mode"
 
 archneo_diag_kmsg() {
     if [ -w /dev/kmsg ]; then
@@ -14,7 +15,17 @@ archneo_diag_kmsg() {
 }
 
 archneo_diag_force_usb_device_role() {
-    local role_path
+    local debugfs role_path
+
+    debugfs="/sys/kernel/debug"
+    mkdir -p "$debugfs"
+    if ! grep -qs " ${debugfs} " /proc/mounts; then
+        mount -t debugfs debugfs "$debugfs" 2>/dev/null || true
+    fi
+
+    if [ -w "$ARCHNEO_DIAG_USB_MODE" ]; then
+        printf 'peripheral\n' > "$ARCHNEO_DIAG_USB_MODE" 2>/dev/null || true
+    fi
 
     for role_path in /sys/class/usb_role/*/role; do
         [ -e "$role_path" ] || continue
@@ -174,6 +185,12 @@ archneo_diag_record() {
         ls -la /sys/bus/mipi-dsi/devices /sys/bus/mipi-dsi/drivers
 
         printf '\n[USB ACM diagnostic console]\n'
+        printf 'qualcomm_usb_mode='
+        if [ -r "$ARCHNEO_DIAG_USB_MODE" ]; then
+            cat "$ARCHNEO_DIAG_USB_MODE"
+        else
+            printf 'unavailable\n'
+        fi
         printf 'configured_udc='
         cat "${ARCHNEO_DIAG_GADGET}/UDC"
         ls -la /sys/class/udc /sys/class/usb_role

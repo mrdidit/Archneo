@@ -27,10 +27,12 @@ The diagnostic image will additionally:
    ROCKNIX Pocket EVO device tree;
 3. add `console=ttyGS0,115200n8` after the existing `ttyMSM0` and `tty0`
    consoles;
-4. create a configfs CDC ACM gadget named `Archneo Early Boot Console` from the
+4. request peripheral mode through both the generic USB-role class and the
+   SM8550 DWC3 debugfs control at `/sys/kernel/debug/usb/a600000.usb/mode`;
+5. create a configfs CDC ACM gadget named `Archneo Early Boot Console` from the
    built-in initramfs, wait up to 30 seconds for a UDC, and bind the first UDC;
-5. keep FAT stage capture and its existing ABL-facing layout unchanged; and
-6. route the diagnostic root's first-boot password setup and subsequent serial
+6. keep FAT stage capture and its existing ABL-facing layout unchanged; and
+7. route the diagnostic root's first-boot password setup and subsequent serial
    getty to `/dev/ttyGS0`.
 
 The same next artifact also restores the pinned ROCKNIX recipe's
@@ -39,6 +41,10 @@ independent of the USB console itself.
 
 The normal direct-root image does not enable or advertise this console. No ADB,
 USB networking, mass-storage export, or preset password is added.
+
+The Qualcomm debugfs fallback follows the same controller path used by
+Thorch's SM8550 USB diagnostic gadget. It is a diagnostic dependency, not a
+change to ABL or to the ROCKNIX device tree.
 
 ## Consequences
 
