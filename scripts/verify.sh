@@ -125,8 +125,8 @@ done
   archneo_die "home seed size must be a positive MiB value"
 [[ "$ARCHNEO_ROOTFS_SCHEMA" =~ ^[1-9][0-9]*$ ]] || \
   archneo_die "rootfs schema must be a positive integer"
-[[ "$ARCHNEO_ROOTFS_SCHEMA" == "6" ]] || \
-  archneo_die "rootfs schema must include the diagnostic mkinitcpio package"
+[[ "$ARCHNEO_ROOTFS_SCHEMA" == "7" ]] || \
+  archneo_die "rootfs schema must include the USB ACM diagnostic console"
 [[ "$ARCHNEO_ROOT_FS_UUID" != "$ARCHNEO_HOME_FS_UUID" ]] || \
   archneo_die "root and home filesystem UUIDs must be different"
 
@@ -199,6 +199,26 @@ grep -Fq 'md5sum KERNEL > KERNEL.md5' "$package_kernel" || \
   archneo_die "ABL KERNEL.md5 is not generated"
 grep -Fq -- "-name 'qcs8550-*.dts'" "$package_kernel" || \
   archneo_die "the complete ROCKNIX SM8550 DTB set is not packaged"
+grep -Fq 'usb_diagnostic="cdc-acm:ttyGS0"' "$package_kernel" || \
+  archneo_die "diagnostic KERNEL does not record its USB ACM console"
+grep -Fq 'usb_console_argument="console=ttyGS0,115200n8"' "$package_kernel" || \
+  archneo_die "diagnostic KERNEL does not select ttyGS0"
+
+embed_initramfs="${ARCHNEO_PROJECT_ROOT}/scripts/embed-initramfs.sh"
+for usb_console_setting in USB_CONFIGFS_ACM U_SERIAL_CONSOLE; do
+  grep -Fq -- "--enable ${usb_console_setting}" "$embed_initramfs" || \
+    archneo_die "diagnostic kernel does not enable ${usb_console_setting}"
+done
+
+diagnostic_hook="${ARCHNEO_PROJECT_ROOT}/rootfs-overlay/etc/initcpio/hooks/archneo-diagnostics"
+grep -Fq 'archneo_diag_setup_usb_acm' "$diagnostic_hook" || \
+  archneo_die "initramfs hook does not configure USB ACM"
+grep -Fq 'Archneo Early Boot Console' "$diagnostic_hook" || \
+  archneo_die "USB ACM diagnostic product identity is missing"
+
+usb_firstboot_override="${ARCHNEO_PROJECT_ROOT}/rootfs-overlay/usr/share/archneo/diagnostics/firstboot-usb-console.conf"
+grep -Fxq 'TTYPath=/dev/ttyGS0' "$usb_firstboot_override" || \
+  archneo_die "diagnostic first-boot setup is not routed to ttyGS0"
 
 build_image="${ARCHNEO_PROJECT_ROOT}/scripts/build-image.sh"
 grep -Fq -- '--change-name=1:"$ROCKNIX_ABL_BOOT_PARTITION_NAME"' "$build_image" || \

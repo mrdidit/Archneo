@@ -11,7 +11,7 @@ archneo_load_device
 
 [[ "$(id -u)" == "0" ]] || archneo_die "rootfs preparation must run as root"
 
-for command in bsdtar chroot find mount mountpoint qemu-aarch64-static rsync sha256sum tar umount; do
+for command in bsdtar chroot find install ln mount mountpoint qemu-aarch64-static rsync sha256sum tar umount; do
   archneo_need_command "$command"
 done
 
@@ -166,6 +166,16 @@ rsync -aHAX --chown=0:0 --exclude='/.archneo-complete' \
   "${extra_firmware_stage}/SM8550/." "${rootfs}/usr/lib/firmware/"
 
 if (( early_boot_diagnostics )); then
+  archneo_log "routing diagnostic first-boot setup and login to USB ttyGS0"
+  install -d -m 0755 \
+    "${rootfs}/etc/systemd/system/archneo-firstboot.service.d" \
+    "${rootfs}/etc/systemd/system/getty.target.wants"
+  install -m 0644 \
+    "${rootfs}/usr/share/archneo/diagnostics/firstboot-usb-console.conf" \
+    "${rootfs}/etc/systemd/system/archneo-firstboot.service.d/usb-console.conf"
+  ln -sfn /usr/lib/systemd/system/serial-getty@.service \
+    "${rootfs}/etc/systemd/system/getty.target.wants/serial-getty@ttyGS0.service"
+
   archneo_log "generating the early-boot diagnostic initramfs"
   archneo_chroot /bin/bash /usr/bin/mkinitcpio \
     -k "$kernel_release" \

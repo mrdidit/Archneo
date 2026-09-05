@@ -37,7 +37,9 @@ kernel_config="${kernel_build_dir}/.config"
 # an earlier rootfs path into a later payload.
 cp -- "$base_config" "$kernel_config"
 "${source_dir}/scripts/config" --file "$kernel_config" \
-  --set-str CONFIG_INITRAMFS_SOURCE "$initramfs"
+  --set-str CONFIG_INITRAMFS_SOURCE "$initramfs" \
+  --enable USB_CONFIGFS_ACM \
+  --enable U_SERIAL_CONSOLE
 
 make_args=(
   -C "$source_dir"
@@ -50,6 +52,15 @@ archneo_log "resolving the kernel-built-in Archneo initramfs configuration"
 make "${make_args[@]}" olddefconfig
 grep -Fxq "CONFIG_INITRAMFS_SOURCE=\"${initramfs}\"" "$kernel_config" || \
   archneo_die "kernel configuration did not retain the Archneo initramfs path"
+for usb_console_setting in \
+  CONFIG_USB_CONFIGFS=y \
+  CONFIG_USB_CONFIGFS_ACM=y \
+  CONFIG_USB_U_SERIAL=y \
+  CONFIG_USB_F_ACM=y \
+  CONFIG_U_SERIAL_CONSOLE=y; do
+  grep -Fxq "$usb_console_setting" "$kernel_config" || \
+    archneo_die "diagnostic kernel did not retain ${usb_console_setting}"
+done
 
 archneo_log "relinking Linux with the Archneo initramfs built in"
 make -j"$JOBS" "${make_args[@]}" Image "qcom/${dtb_name}"

@@ -73,6 +73,8 @@ if [[ -n "$builtin_initramfs" ]]; then
   builtin_initramfs_sha256="$(sha256sum -- "$builtin_initramfs" | awk '{print $1}')"
   root_argument="root=PARTUUID=${ARCHNEO_ROOT_PART_GUID}"
   diagnostic_arguments="boot=LABEL=${ROCKNIX_ABL_BOOT_LABEL} rd.debug rd.log=all"
+  usb_diagnostic="cdc-acm:ttyGS0"
+  usb_console_argument="console=ttyGS0,115200n8"
 else
   # The bring-up image follows the hardware-proven initramfs-free SM8550 path.
   # Linux can resolve a GPT PARTUUID directly; filesystem UUID resolution would
@@ -84,9 +86,11 @@ else
   builtin_initramfs_sha256="none"
   root_argument="root=PARTUUID=${ARCHNEO_ROOT_PART_GUID}"
   diagnostic_arguments=""
+  usb_diagnostic="none"
+  usb_console_argument=""
 fi
 
-cmdline="${root_argument} rootfstype=ext4 rw rootwait ${diagnostic_arguments} console=ttyMSM0,115200n8 console=tty0 systemd.unit=multi-user.target systemd.show_status=1 loglevel=7 ignore_loglevel drm.debug=0x1ff log_buf_len=4M allow_mismatched_32bit_el0 fw_devlink.strict=1 pcie_ports=compat irqaffinity=0-2 cgroup.memory=nokmem,nosocket nosoftlockup usbcore.interrupt_interval_override=045e:028e:2"
+cmdline="${root_argument} rootfstype=ext4 rw rootwait ${diagnostic_arguments} console=ttyMSM0,115200n8 console=tty0 ${usb_console_argument} systemd.unit=multi-user.target systemd.show_status=1 loglevel=7 ignore_loglevel drm.debug=0x1ff log_buf_len=4M allow_mismatched_32bit_el0 fw_devlink.strict=1 pcie_ports=compat irqaffinity=0-2 cgroup.memory=nokmem,nosocket nosoftlockup usbcore.interrupt_interval_override=045e:028e:2"
 (( ${#cmdline} <= 511 )) || archneo_die "Android boot-image v0 command line exceeds 511 bytes"
 
 python3 "${mkbootimg_dir}/mkbootimg.py" \
@@ -116,6 +120,7 @@ dtb_list="$(IFS=,; printf '%s' "${dtb_names[*]}")"
   printf 'ramdisk_sha256=%s\n' "$(sha256sum -- "$ramdisk" | awk '{print $1}')"
   printf 'initramfs_delivery=%s\n' "$initramfs_delivery"
   printf 'builtin_initramfs_sha256=%s\n' "$builtin_initramfs_sha256"
+  printf 'usb_diagnostic=%s\n' "$usb_diagnostic"
   printf 'selected_dtb=%s\n' "$selected_dtb_name"
   printf 'dtb_selection=abl-appended-set\n'
   printf 'dtb_count=%s\n' "${#dtb_names[@]}"

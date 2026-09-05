@@ -83,7 +83,9 @@ artifact uses the controlled diagnostic exception in
 [ADR 0007](../decisions/0007-early-boot-diagnostic-initramfs.md): a functional
 initramfs is linked into Linux, the Android ramdisk is ROCKNIX's literal
 `dummy`, the root remains the same `PARTUUID`, and early stages are written to
-the `ROCKNIX` FAT filesystem.
+the `ROCKNIX` FAT filesystem. After the first test produced no FAT stage file,
+[ADR 0008](../decisions/0008-usb-acm-diagnostic-console.md) added a
+diagnostic-only CDC ACM `ttyGS0` console without changing that ABL envelope.
 
 `make kernel` builds the common Linux image, modules, and every DTB represented
 by the pinned ROCKNIX SM8550 `.dts` files. Packaging concatenates those DTBs in

@@ -77,8 +77,10 @@ sudo make diagnostic-image
 ```
 
 That variant retains the EVO root `PARTUUID` and complete appended DTB set,
-but links a generated mkinitcpio archive into Linux and writes pre-systemd
-stages below `/archneo-diagnostics` on the FAT filesystem. Its image is:
+but links a generated mkinitcpio archive into Linux, writes pre-systemd stages
+below `/archneo-diagnostics` on the FAT filesystem, and configures a CDC ACM
+kernel console on `ttyGS0`. A Linux host connected to the EVO should expose it
+as `/dev/ttyACM0`. Its image is:
 
 ```text
 out/ayaneo-pocket-evo/Archneo-ayaneo-pocket-evo-early-boot-diagnostic.img.gz
@@ -94,8 +96,9 @@ The image stage:
 3. updates the rootfs from the official Arch Linux ARM repositories under
    qemu, removes `alarm`, creates locked `root` and `deck` accounts, and sets
    `multi-user.target` as the default;
-4. enables NetworkManager and the `tty1` first-boot password setup while
-   disabling systemd-networkd and SSH; and
+4. enables NetworkManager and the normal `tty1` first-boot password setup while
+   disabling systemd-networkd and SSH; the diagnostic variant redirects that
+   setup to USB `ttyGS0`; and
 5. creates and verifies the FAT32/ext4/ext4 disk image with GPT boot name
    `system`, FAT label `ROCKNIX`, `/KERNEL`, and both kernel checksums.
 
@@ -234,6 +237,9 @@ built-ins. Linux resolves the fixed root GPT UUID and mounts ext4 directly.
 The Android boot-image ramdisk is a valid empty `newc` archive. The baseline
 kernel deltas are recorded in
 [`config/kernel/archneo-sm8550.fragment`](../config/kernel/archneo-sm8550.fragment).
+The diagnostic relink additionally enables configfs CDC ACM and the USB serial
+console. Those options are asserted after `olddefconfig` and do not alter the
+ordinary direct-root kernel configuration.
 
 ## Reproducibility boundary
 

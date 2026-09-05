@@ -41,7 +41,8 @@ is recorded in the build manifest.
 - A root-stage or emergency file narrows the failure without requiring a
   working display or network.
 - No FAT diagnostic directory means the kernel did not reach the hook or could
-  not enumerate/mount the FAT filesystem; physical UART remains the next
-  independent observation path.
+  not enumerate/mount the FAT filesystem. The first EVO test of this image
+  produced exactly that ambiguous result, so ADR 0008 adds a USB ACM path that
+  does not require the FAT filesystem.
 - This diagnostic artifact is not a release configuration or hardware-support
   claim.

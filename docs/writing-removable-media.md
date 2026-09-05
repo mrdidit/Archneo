@@ -75,10 +75,28 @@ successful boot-time expansion.
 
 ## First Pocket EVO boot
 
-Insert the safely ejected card into Pocket EVO and select **Pocket EVO** in
-ROCKNIX-ABL. The intended first visible milestone is the Archneo `tty1` setup,
-which asks separately for `root` and `deck` passwords. There are no preset
-passwords. Let the first boot finish because `/home` expansion and persistent
+Insert the safely ejected card into Pocket EVO. Before selecting **Pocket EVO**
+in ROCKNIX-ABL, connect the EVO to an Ubuntu or other Linux host with a
+data-capable USB-C cable. On the host, monitor USB and tty discovery:
+
+```sh
+sudo dmesg --follow
+```
+
+If Linux reaches the diagnostic initramfs and initializes the EVO's USB device
+controller, the host should identify `Archneo Early Boot Console` and create
+`/dev/ttyACM0`. In another host terminal, install and open a serial terminal:
+
+```sh
+sudo apt-get install picocom
+sudo picocom --baud 115200 /dev/ttyACM0
+```
+
+Exit picocom with `Ctrl-A`, then `Ctrl-X`. The intended milestone is kernel and
+initramfs output followed by Archneo password setup, which asks separately for
+`root` and `deck` passwords. There are no preset passwords. Password setup is
+routed to USB in this diagnostic image; the ordinary image continues to use
+`tty1`. Let the first boot finish because `/home` expansion and persistent
 diagnostic capture run automatically.
 
 If the diagnostic image remains black, leave it running for at least two
@@ -92,4 +110,6 @@ find "$boot/archneo-diagnostics" -maxdepth 3 -type f -printf '%P  %s bytes\n'
 
 Preserve the entire `archneo-diagnostics` directory before another test. Its
 absence means Linux did not reach the custom initramfs hook or the hook could
-not enumerate and mount the FAT filesystem.
+not enumerate and mount the FAT filesystem. Record whether `/dev/ttyACM0`
+appeared even when this directory remains absent; the two paths have different
+dependencies.

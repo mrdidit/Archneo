@@ -22,6 +22,7 @@ and known limitations are part of the deliverable.
 - [ADR 0005: match the proven SM8550 ABL envelope and boot ext4 directly](decisions/0005-direct-root-abl-parity.md)
 - [ADR 0006: make Pocket EVO the active bring-up device](decisions/0006-pocket-evo-active-bring-up.md)
 - [ADR 0007: add an early-boot diagnostic initramfs for Pocket EVO](decisions/0007-early-boot-diagnostic-initramfs.md)
+- [ADR 0008: add a USB ACM diagnostic console for Pocket EVO](decisions/0008-usb-acm-diagnostic-console.md)
 
 ## Documentation rules
 

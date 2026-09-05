@@ -5,7 +5,8 @@
 - Archneo identifier: `ayaneo-pocket-evo`
 - SoC/platform: Qualcomm SM8550
 - Bring-up priority: active
-- Current Archneo status: image profile implemented; hardware untested
+- Current Archneo status: image profile implemented; three unsuccessful
+  removable-media attempts recorded
 
 Pocket EVO reuses the Archneo SM8550 base established during Pocket S 2K work
 but remains a distinct device profile with independent media identities and
@@ -51,10 +52,12 @@ ROCKNIX-ABL.
    to verify and write
    `Archneo-ayaneo-pocket-evo-early-boot-diagnostic.img.gz` as a complete disk
    image.
-2. Safely eject it, insert it into Pocket EVO, and select Pocket EVO in
-   ROCKNIX-ABL.
-3. Record whether the panel changes, the TTY password setup appears, and the
-   device shuts down normally. Do not infer Linux boot merely from vibration.
+2. Insert it into Pocket EVO, connect the EVO USB-C port to a Linux host with a
+   data-capable cable, and monitor for `/dev/ttyACM0` before selecting Pocket
+   EVO in ROCKNIX-ABL.
+3. Open `/dev/ttyACM0` at 115200 baud if it appears. Record the complete output,
+   whether password setup appears, and whether the device shuts down normally.
+   Do not infer Linux boot merely from vibration.
 4. After a forced stop or failed boot, mount both `ROCKNIX` and
    `ARCHNEO_ROOT` on another Linux system. Preserve `/archneo-diagnostics`
    from `ROCKNIX`, then `/var/lib/archneo` and `/var/log/journal` from the root
@@ -68,7 +71,7 @@ ROCKNIX-ABL.
 | Area | Status | First evidence required |
 | --- | --- | --- |
 | ABL payload selection | Attempted; handoff unproven | ABL selection plus observed handoff |
-| Kernel entry and ext4 root | No evidence from USB or microSD | FAT initramfs stage, journal, or `/var/lib/archneo/userspace-reached` |
+| Kernel entry and ext4 root | No evidence from USB or microSD | USB ACM output, FAT initramfs stage, journal, or `/var/lib/archneo/userspace-reached` |
 | Display/TTY | USB retained Qualcomm splash; microSD became black | visible first-boot password prompt |
 | Touchscreen | Untested | evdev device and coordinate test |
 | Internal/removable storage | Untested | `lsblk`, mount, and I/O observations |
@@ -118,3 +121,27 @@ device is described as supported.
 - Next controlled change: the ADR 0007 image adds a kernel-built-in diagnostic
   initramfs while retaining the full DTB set and EVO root `PARTUUID`; inspect
   `/archneo-diagnostics` on `ROCKNIX` after the test
+
+## Third hardware attempt
+
+- Date reported and inspected: 2026-09-05
+- Image: GitHub Actions run
+  [`33970427387`](https://github.com/mrdidit/Archneo/actions/runs/33970427387),
+  commit `87b2f5cff98fef58c4bc8760b91bde89529940f1`
+- Medium: microSD
+- Post-test inspection: the FAT and both ext4 partitions were intact;
+  `KERNEL.md5` and `KERNEL.sha256` passed; the manifest selected
+  `qcs8550-ayaneo-pocketevo.dtb`, named all 14 appended DTBs, and used the root
+  partition's exact GPT UUID
+- Initramfs inspection: the FAT copy contained mkinitcpio's uncompressed early
+  CPIO followed at byte 10240 by the gzip-compressed main archive; the main
+  archive contained the executable `archneo-diagnostics` hook, `blkid`,
+  `mount`, and `dmesg`
+- Runtime evidence: no `/archneo-diagnostics` directory, root marker, journal,
+  or `/home` expansion existed after the attempt
+- Interpretation: image corruption, partition identity, and omission of the
+  hook from the built artifact are ruled out. The result still cannot
+  distinguish a pre-initramfs failure from failure to enumerate or mount the
+  microSD inside the initramfs.
+- Next controlled change: ADR 0008 adds a configfs CDC ACM console on `ttyGS0`
+  while keeping the FAT evidence path active.

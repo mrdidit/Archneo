@@ -44,9 +44,11 @@ The ABL-facing FAT32 partition remains 2 GiB, named `system`, and labelled
 `ROCKNIX`. The installed ROCKNIX-ABL is a prerequisite and is left untouched.
 
 The first EVO USB and microSD tests produced no systemd journal or userspace
-marker. The active follow-up is therefore an explicitly named early-boot
-diagnostic image that records initramfs stages to the FAT filesystem before
-the real root or display is required.
+marker. A subsequent built-in-initramfs test also left no FAT diagnostic file,
+despite an intact payload and matching root `PARTUUID`. The active follow-up
+adds a CDC ACM console to that diagnostic image. If Linux reaches the
+initramfs, a connected Linux host should expose `/dev/ttyACM0` independently
+of the EVO display and SD-card write path.
 
 The image boots to `tty1` and asks independently for `root` and `deck`
 passwords before starting the normal login prompt. `deck` has

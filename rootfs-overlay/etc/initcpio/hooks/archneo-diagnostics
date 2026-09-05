@@ -3,6 +3,91 @@
 ARCHNEO_DIAG_MOUNT="/run/archneo-boot"
 ARCHNEO_DIAG_BOOT_ID="$(cat /proc/sys/kernel/random/boot_id 2>/dev/null)"
 [ -n "$ARCHNEO_DIAG_BOOT_ID" ] || ARCHNEO_DIAG_BOOT_ID="unknown-boot"
+ARCHNEO_DIAG_GADGET="/sys/kernel/config/usb_gadget/archneo"
+
+archneo_diag_kmsg() {
+    if [ -w /dev/kmsg ]; then
+        printf '<6>archneo-diagnostics: %s\n' "$*" > /dev/kmsg
+    else
+        printf 'archneo-diagnostics: %s\n' "$*" >&2
+    fi
+}
+
+archneo_diag_force_usb_device_role() {
+    local role_path
+
+    for role_path in /sys/class/usb_role/*/role; do
+        [ -e "$role_path" ] || continue
+        if [ "$(cat "$role_path" 2>/dev/null)" != "device" ]; then
+            printf 'device\n' > "$role_path" 2>/dev/null || true
+        fi
+    done
+}
+
+archneo_diag_setup_usb_acm() {
+    local attempt configfs udc udc_path
+
+    configfs="/sys/kernel/config"
+    mkdir -p "$configfs"
+    if ! grep -qs " ${configfs} " /proc/mounts; then
+        mount -t configfs configfs "$configfs" || {
+            archneo_diag_kmsg "unable to mount configfs for USB ACM"
+            return 1
+        }
+    fi
+
+    mkdir -p \
+        "${ARCHNEO_DIAG_GADGET}/strings/0x409" \
+        "${ARCHNEO_DIAG_GADGET}/configs/c.1/strings/0x409" || return 1
+    printf '0x1d6b\n' > "${ARCHNEO_DIAG_GADGET}/idVendor" || return 1
+    printf '0x0104\n' > "${ARCHNEO_DIAG_GADGET}/idProduct" || return 1
+    printf '0x0200\n' > "${ARCHNEO_DIAG_GADGET}/bcdUSB" || return 1
+    printf '0x0100\n' > "${ARCHNEO_DIAG_GADGET}/bcdDevice" || return 1
+    printf '%s\n' "$ARCHNEO_DIAG_BOOT_ID" > \
+        "${ARCHNEO_DIAG_GADGET}/strings/0x409/serialnumber" || return 1
+    printf 'Archneo\n' > \
+        "${ARCHNEO_DIAG_GADGET}/strings/0x409/manufacturer" || return 1
+    printf 'Archneo Early Boot Console\n' > \
+        "${ARCHNEO_DIAG_GADGET}/strings/0x409/product" || return 1
+    printf 'CDC ACM diagnostic console\n' > \
+        "${ARCHNEO_DIAG_GADGET}/configs/c.1/strings/0x409/configuration" || return 1
+    printf '120\n' > "${ARCHNEO_DIAG_GADGET}/configs/c.1/MaxPower" || return 1
+
+    mkdir -p "${ARCHNEO_DIAG_GADGET}/functions/acm.usb0" || return 1
+    if [ -w "${ARCHNEO_DIAG_GADGET}/functions/acm.usb0/console" ]; then
+        printf '1\n' > \
+            "${ARCHNEO_DIAG_GADGET}/functions/acm.usb0/console" || return 1
+    fi
+    if [ ! -e "${ARCHNEO_DIAG_GADGET}/configs/c.1/acm.usb0" ]; then
+        ln -s ../../functions/acm.usb0 \
+            "${ARCHNEO_DIAG_GADGET}/configs/c.1/acm.usb0" || return 1
+    fi
+
+    udc=""
+    for attempt in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 \
+        16 17 18 19 20 21 22 23 24 25 26 27 28 29 30; do
+        archneo_diag_force_usb_device_role
+        for udc_path in /sys/class/udc/*; do
+            [ -e "$udc_path" ] || continue
+            udc="${udc_path##*/}"
+            break
+        done
+        [ -n "$udc" ] && break
+        sleep 1
+    done
+
+    if [ -z "$udc" ]; then
+        archneo_diag_kmsg "no USB device controller appeared within 30 seconds"
+        return 1
+    fi
+    if ! printf '%s\n' "$udc" > "${ARCHNEO_DIAG_GADGET}/UDC"; then
+        archneo_diag_kmsg "unable to bind USB ACM gadget to ${udc}"
+        return 1
+    fi
+
+    archneo_diag_kmsg "USB ACM ready on ttyGS0 via ${udc}; host device is /dev/ttyACM0"
+    return 0
+}
 
 archneo_diag_mount_boot() {
     local attempt boot_device boot_label boot_spec
@@ -88,6 +173,11 @@ archneo_diag_record() {
         printf '\n[MIPI DSI bus]\n'
         ls -la /sys/bus/mipi-dsi/devices /sys/bus/mipi-dsi/drivers
 
+        printf '\n[USB ACM diagnostic console]\n'
+        printf 'configured_udc='
+        cat "${ARCHNEO_DIAG_GADGET}/UDC"
+        ls -la /sys/class/udc /sys/class/usb_role
+
         printf '\n[kernel log]\n'
         dmesg
 
@@ -118,15 +208,19 @@ archneo_diag_mark_real_root() {
 }
 
 run_hook() {
+    archneo_diag_kmsg "entered built-in initramfs hook"
+    archneo_diag_setup_usb_acm || true
     archneo_diag_record initramfs-before-root
 }
 
 run_latehook() {
+    archneo_diag_kmsg "real-root mount attempt returned"
     archneo_diag_record initramfs-root-mounted
     archneo_diag_mark_real_root root-mounted
 }
 
 run_cleanuphook() {
+    archneo_diag_kmsg "switching from initramfs to the Archneo root"
     archneo_diag_record initramfs-before-switch-root
     archneo_diag_mark_real_root before-switch-root
     if grep -qs " ${ARCHNEO_DIAG_MOUNT} " /proc/mounts; then
@@ -135,5 +229,6 @@ run_cleanuphook() {
 }
 
 run_emergencyhook() {
+    archneo_diag_kmsg "initramfs entered its emergency path"
     archneo_diag_record initramfs-emergency
 }

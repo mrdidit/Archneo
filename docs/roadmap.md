@@ -23,8 +23,10 @@ boots on Pocket S 2K, with audio not working. Archneo now applies that low-level
 ABL envelope to a separate Pocket EVO profile while retaining ext4, Archneo
 userspace, and the official rolling Arch Linux ARM repositories. A Pocket EVO
 is locally available. Its first USB and microSD tests produced no systemd
-journal or userspace marker; the immediate target is now a FAT-persisted
-initramfs stage before returning to the `tty1` password setup.
+journal or userspace marker. The FAT-persisted initramfs image was intact on
+the tested card but produced no stage file. The immediate target is therefore
+a USB CDC ACM console that can expose kernel and initramfs output without a
+working panel or writable SD device.
 
 ## Phases
 
@@ -60,8 +62,8 @@ scope.
 ### 3. Boot the Pocket EVO from removable media
 
 - Boot without installing Archneo to internal storage.
-- Reach the `tty1` credential setup, set distinct `root` and `deck` passwords,
-  and then reach the normal login prompt.
+- Reach the diagnostic USB console or `tty1` credential setup, set distinct
+  `root` and `deck` passwords, and then reach the normal login prompt.
 - Verify NetworkManager starts and can create a connection with `nmcli`.
 - Reach a diagnostic console with persistent logs.
 - Mount the intended Arch root filesystem.
