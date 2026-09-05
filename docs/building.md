@@ -90,6 +90,10 @@ The published output is:
 out/ayaneo-pocket-evo/Archneo-ayaneo-pocket-evo.img.gz
 ```
 
+See [writing an Archneo removable image](writing-removable-media.md) for the
+minimum card size, checksum verification, balenaEtcher procedure, and guarded
+command-line alternative.
+
 Archneo does not overlay `/etc/pacman.conf`. The configuration and mirror list
 from the signature-verified Arch Linux ARM rootfs remain installed, including
 the normal `[core]`, `[extra]`, `[alarm]`, and `[aur]` repositories. Pocknix's

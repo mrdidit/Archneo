@@ -47,7 +47,9 @@ ROCKNIX-ABL.
 
 ## First controlled test
 
-1. Write `Archneo-ayaneo-pocket-evo.img.gz` to a card as a complete disk image.
+1. Follow [writing an Archneo removable image](../writing-removable-media.md)
+   to verify and write `Archneo-ayaneo-pocket-evo.img.gz` as a complete disk
+   image.
 2. Safely eject it, insert it into Pocket EVO, and select Pocket EVO in
    ROCKNIX-ABL.
 3. Record whether the panel changes, the TTY password setup appears, and the
