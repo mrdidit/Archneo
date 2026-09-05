@@ -55,7 +55,7 @@ make "${make_args[@]}" olddefconfig
 
 archneo_log "building Linux, modules, and ${#dtb_names[@]} ROCKNIX SM8550 device trees"
 make -j"$JOBS" "${make_args[@]}" \
-  Image modules "${dtb_targets[@]}"
+  DTC_FLAGS=-@ Image modules "${dtb_targets[@]}"
 
 modules_dir="${device_out}/rootfs-overlay"
 make "${make_args[@]}" "INSTALL_MOD_PATH=${modules_dir}" modules_install

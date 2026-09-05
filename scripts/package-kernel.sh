@@ -41,6 +41,8 @@ printf '%s\n' "${dtb_names[@]}" | grep -Fxq "$selected_dtb_name" || \
 for dtb_name in "${dtb_names[@]}"; do
   [[ -f "${dt_build_dir}/${dtb_name}" ]] || \
     archneo_die "device tree was not built: ${dt_build_dir}/${dtb_name}"
+  grep -aFq '__symbols__' "${dt_build_dir}/${dtb_name}" || \
+    archneo_die "device tree lacks ROCKNIX overlay symbols: ${dtb_name}"
 done
 mkdir -p -- "$device_out" "$published_out"
 
@@ -123,6 +125,7 @@ dtb_list="$(IFS=,; printf '%s' "${dtb_names[*]}")"
   printf 'usb_diagnostic=%s\n' "$usb_diagnostic"
   printf 'selected_dtb=%s\n' "$selected_dtb_name"
   printf 'dtb_selection=abl-appended-set\n'
+  printf 'dtb_symbols=required-present\n'
   printf 'dtb_count=%s\n' "${#dtb_names[@]}"
   printf 'dtbs=%s\n' "$dtb_list"
   printf 'linux_version=%s\n' "$LINUX_VERSION"

@@ -63,7 +63,7 @@ for usb_console_setting in \
 done
 
 archneo_log "relinking Linux with the Archneo initramfs built in"
-make -j"$JOBS" "${make_args[@]}" Image "qcom/${dtb_name}"
+make -j"$JOBS" "${make_args[@]}" DTC_FLAGS=-@ Image "qcom/${dtb_name}"
 embedded_initramfs="${kernel_build_dir}/usr/initramfs_inc_data"
 [[ -s "$embedded_initramfs" ]] || \
   archneo_die "kernel build did not produce embedded initramfs data"

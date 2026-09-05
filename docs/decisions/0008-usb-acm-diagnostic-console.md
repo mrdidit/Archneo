@@ -33,6 +33,10 @@ The diagnostic image will additionally:
 6. route the diagnostic root's first-boot password setup and subsequent serial
    getty to `/dev/ttyGS0`.
 
+The same next artifact also restores the pinned ROCKNIX recipe's
+`DTC_FLAGS=-@` setting under ADR 0009. That boot-contract correction is
+independent of the USB console itself.
+
 The normal direct-root image does not enable or advertise this console. No ADB,
 USB networking, mass-storage export, or preset password is added.
 

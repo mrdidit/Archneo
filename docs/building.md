@@ -226,10 +226,11 @@ ROCKNIX build:
 
 Files ending in `.disabled` are deliberately excluded. The entire SM8550 DTS
 overlay is then copied into the kernel tree. Every `qcs8550-*.dts` supplied by
-that pinned overlay is built and its DTB is appended in deterministic filename
-order; the manifest separately records Pocket EVO as the selected Archneo
-device profile. Per-device DTB selection and stable media identities live in
-[`config/devices`](../config/devices).
+that pinned overlay is built with ROCKNIX's `DTC_FLAGS=-@`; packaging rejects
+any output without `__symbols__`, then appends the DTBs in deterministic
+filename order. The manifest separately records Pocket EVO as the selected
+Archneo device profile. Per-device DTB selection and stable media identities
+live in [`config/devices`](../config/devices).
 
 The active bring-up configuration clears `CONFIG_INITRAMFS_SOURCE`, sets the
 hostname/local version, and pins devtmpfs, Qualcomm MMC/SDHCI, and ext4 as

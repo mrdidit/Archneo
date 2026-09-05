@@ -144,4 +144,5 @@ device is described as supported.
   distinguish a pre-initramfs failure from failure to enumerate or mount the
   microSD inside the initramfs.
 - Next controlled change: ADR 0008 adds a configfs CDC ACM console on `ttyGS0`
-  while keeping the FAT evidence path active.
+  while keeping the FAT evidence path active. ADR 0009 also restores
+  ROCKNIX's omitted `DTC_FLAGS=-@` build setting and rejects symbol-less DTBs.

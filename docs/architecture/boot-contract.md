@@ -39,7 +39,8 @@ The `/KERNEL` file is an Android boot image with header version 0. ROCKNIX
 constructs it as follows:
 
 1. gzip the arm64 Linux `Image`;
-2. append the built DTB set to that gzip file;
+2. build the DTBs with `DTC_FLAGS=-@` and append the resulting symbol-bearing
+   DTB set to that gzip file;
 3. use the literal five-byte string `dummy` as the ramdisk;
 4. set kernel, ramdisk, and tags offsets to zero;
 5. set Android OS version `12.0.0`; and
@@ -88,10 +89,11 @@ the `ROCKNIX` FAT filesystem. After the first test produced no FAT stage file,
 diagnostic-only CDC ACM `ttyGS0` console without changing that ABL envelope.
 
 `make kernel` builds the common Linux image, modules, and every DTB represented
-by the pinned ROCKNIX SM8550 `.dts` files. Packaging concatenates those DTBs in
-locale-independent filename order. The essential Qualcomm SDHCI/MMC,
-devtmpfs, and ext4 paths are built in, so Linux can mount the root partition
-without loading a module or running an initramfs.
+by the pinned ROCKNIX SM8550 `.dts` files. It retains ROCKNIX's
+`DTC_FLAGS=-@`, and packaging rejects any DTB without `__symbols__` before
+concatenating the set in locale-independent filename order. The essential
+Qualcomm SDHCI/MMC, devtmpfs, and ext4 paths are built in, so Linux can mount
+the root partition without loading a module or running an initramfs.
 
 The first hardware image placed an Archneo initramfs in the Android ramdisk;
 the second linked it into Linux. Both remained on a black screen and produced

@@ -199,16 +199,24 @@ grep -Fq 'md5sum KERNEL > KERNEL.md5' "$package_kernel" || \
   archneo_die "ABL KERNEL.md5 is not generated"
 grep -Fq -- "-name 'qcs8550-*.dts'" "$package_kernel" || \
   archneo_die "the complete ROCKNIX SM8550 DTB set is not packaged"
+grep -Fq "grep -aFq '__symbols__'" "$package_kernel" || \
+  archneo_die "packaging does not reject DTBs without ROCKNIX overlay symbols"
 grep -Fq 'usb_diagnostic="cdc-acm:ttyGS0"' "$package_kernel" || \
   archneo_die "diagnostic KERNEL does not record its USB ACM console"
 grep -Fq 'usb_console_argument="console=ttyGS0,115200n8"' "$package_kernel" || \
   archneo_die "diagnostic KERNEL does not select ttyGS0"
 
 embed_initramfs="${ARCHNEO_PROJECT_ROOT}/scripts/embed-initramfs.sh"
+grep -Fq 'DTC_FLAGS=-@ Image' "$embed_initramfs" || \
+  archneo_die "diagnostic relink does not preserve ROCKNIX DTB symbols"
 for usb_console_setting in USB_CONFIGFS_ACM U_SERIAL_CONSOLE; do
   grep -Fq -- "--enable ${usb_console_setting}" "$embed_initramfs" || \
     archneo_die "diagnostic kernel does not enable ${usb_console_setting}"
 done
+
+kernel_builder="${ARCHNEO_PROJECT_ROOT}/scripts/build-kernel.sh"
+grep -Fq 'DTC_FLAGS=-@ Image modules' "$kernel_builder" || \
+  archneo_die "kernel build does not preserve ROCKNIX DTB symbols"
 
 diagnostic_hook="${ARCHNEO_PROJECT_ROOT}/rootfs-overlay/etc/initcpio/hooks/archneo-diagnostics"
 grep -Fq 'archneo_diag_setup_usb_acm' "$diagnostic_hook" || \
