@@ -89,6 +89,9 @@ device is described as supported.
 - Medium: removable USB storage connected to Pocket EVO
 - Observation: the unit vibrated and remained on the Qualcomm splash; no
   Archneo TTY was visible
+- Post-test evidence: both `/var/lib/archneo` and `/var/log/journal` on
+  `ARCHNEO_ROOT` were empty, so there is no evidence that systemd/userspace
+  ran
 - Diagnostic limitation: the USB storage occupied the wired port, and this
   image does not configure ADB, USB serial, or USB networking
 - Interpretation: neither vibration nor a retained firmware splash proves
