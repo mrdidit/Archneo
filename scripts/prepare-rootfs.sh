@@ -60,7 +60,7 @@ if [[ "$existing_schema" == "$rootfs_identity" ]]; then
       archneo_die "cached diagnostic rootfs has no initramfs: ${initramfs}"
     ARCHNEO_DEVICE="$device" \
     ARCHNEO_INITRAMFS="$initramfs" \
-      "${SCRIPT_DIR}/embed-initramfs.sh"
+      "${SCRIPT_DIR}/package-diagnostic-kernel.sh"
   fi
   exit 0
 fi
@@ -207,7 +207,7 @@ printf '%s\n' "$rootfs_identity" > "${rootfs}/.archneo-complete"
 if (( early_boot_diagnostics )); then
   ARCHNEO_DEVICE="$device" \
   ARCHNEO_INITRAMFS="$initramfs" \
-    "${SCRIPT_DIR}/embed-initramfs.sh"
+    "${SCRIPT_DIR}/package-diagnostic-kernel.sh"
   archneo_log "prepared early-boot diagnostic Archneo rootfs: ${rootfs}"
 else
   archneo_log "prepared direct-root Archneo rootfs: ${rootfs}"

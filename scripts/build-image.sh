@@ -11,7 +11,7 @@ archneo_load_device
 
 [[ "$(id -u)" == "0" ]] || archneo_die "disk-image construction must run as root"
 
-for command in awk blkid e2fsck fsck.vfat grep gzip losetup md5sum mkfs.ext4 mkfs.vfat \
+for command in awk blkid cmp e2fsck fsck.vfat grep gzip losetup md5sum mkfs.ext4 mkfs.vfat \
   mount mountpoint rsync sgdisk sfdisk sha256sum sync truncate udevadm umount; do
   archneo_need_command "$command"
 done
@@ -55,13 +55,15 @@ if (( early_boot_diagnostics )); then
   grep -Fxq 'package_kind=early-boot-diagnostic' \
     "${device_out}/build-manifest.txt" || \
     archneo_die "KERNEL manifest does not record the diagnostic package"
-  grep -Fxq 'initramfs_delivery=kernel-built-in' \
+  grep -Fxq 'initramfs_delivery=android-boot-ramdisk' \
     "${device_out}/build-manifest.txt" || \
-    archneo_die "KERNEL manifest does not record the built-in initramfs"
-  grep -Fxq "builtin_initramfs_sha256=${initramfs_sha256}" \
+    archneo_die "KERNEL manifest does not record the external initramfs"
+  grep -Fxq "initramfs_sha256=${initramfs_sha256}" \
     "${device_out}/build-manifest.txt" || \
     archneo_die "KERNEL manifest initramfs checksum mismatch"
-  initramfs_delivery="kernel-built-in"
+  cmp -s -- "$initramfs" "${device_out}/ramdisk" || \
+    archneo_die "Android boot-image ramdisk differs from the diagnostic initramfs"
+  initramfs_delivery="android-boot-ramdisk"
 else
   grep -Fxq 'initramfs_delivery=none-direct-root' \
     "${device_out}/build-manifest.txt" || \

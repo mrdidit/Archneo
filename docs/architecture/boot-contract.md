@@ -78,15 +78,14 @@ boots:
 | Systemd target | `multi-user.target` | reach TTY credential setup before graphical work |
 | Console | `ttyMSM0` and `tty0`, verbose logging | early bring-up evidence |
 
-The direct-root values above remain the ordinary image profile. After both USB
-and microSD EVO tests produced no userspace evidence, the next workflow
-artifact uses the controlled diagnostic exception in
-[ADR 0007](../decisions/0007-early-boot-diagnostic-initramfs.md): a functional
-initramfs is linked into Linux, the Android ramdisk is ROCKNIX's literal
-`dummy`, the root remains the same `PARTUUID`, and early stages are written to
-the `ROCKNIX` FAT filesystem. After the first test produced no FAT stage file,
-[ADR 0008](../decisions/0008-usb-acm-diagnostic-console.md) added a
-diagnostic-only CDC ACM `ttyGS0` console without changing that ABL envelope.
+The direct-root values above remain the ordinary image profile. ADRs 0007 and
+0008 tested a functional initramfs linked into Linux, ROCKNIX's literal
+`dummy` Android ramdisk, FAT stage capture, and a diagnostic CDC ACM `ttyGS0`
+console. The corrected symbol-bearing test still produced no persistent boot
+evidence. [ADR 0010](../decisions/0010-external-diagnostic-initramfs.md) keeps
+the USB and FAT diagnostics but moves the functional initramfs into the
+Android ramdisk field of `/KERNEL` on the SD card. The root remains the same
+`PARTUUID`.
 
 `make kernel` builds the common Linux image, modules, and every DTB represented
 by the pinned ROCKNIX SM8550 `.dts` files. It retains ROCKNIX's
@@ -95,11 +94,12 @@ concatenating the set in locale-independent filename order. The essential
 Qualcomm SDHCI/MMC, devtmpfs, and ext4 paths are built in, so Linux can mount
 the root partition without loading a module or running an initramfs.
 
-The first hardware image placed an Archneo initramfs in the Android ramdisk;
-the second linked it into Linux. Both remained on a black screen and produced
-no journal or first-boot marker after forced power-off. The built-in experiment
-is recorded in [ADR 0004](../decisions/0004-built-in-initramfs.md); the active
-direct-root response is [ADR 0005](../decisions/0005-direct-root-abl-parity.md).
+The first Pocket S 2K hardware image placed an Archneo initramfs in the Android
+ramdisk; the second linked it into Linux. Both produced no journal or
+first-boot marker after forced power-off. The built-in experiment is recorded
+in [ADR 0004](../decisions/0004-built-in-initramfs.md); the direct-root
+response is [ADR 0005](../decisions/0005-direct-root-abl-parity.md). ADR 0010
+retests the external delivery only after the later EVO/full-DTB/USB corrections.
 
 The removable image uses stable, machine-readable filesystem and partition
 UUIDs from the selected file in

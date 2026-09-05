@@ -77,10 +77,11 @@ sudo make diagnostic-image
 ```
 
 That variant retains the EVO root `PARTUUID` and complete appended DTB set,
-but links a generated mkinitcpio archive into Linux, writes pre-systemd stages
-below `/archneo-diagnostics` on the FAT filesystem, and configures a CDC ACM
-kernel console on `ttyGS0`. A Linux host connected to the EVO should expose it
-as `/dev/ttyACM0`. Its image is:
+puts a generated mkinitcpio archive in the removable `/KERNEL` file's Android
+ramdisk field, writes pre-systemd stages below `/archneo-diagnostics` on the
+FAT filesystem, and configures a CDC ACM kernel console on `ttyGS0`. A Linux
+host connected to the EVO should identify `Archneo Early Boot Console` and
+expose it as `/dev/ttyACM0`. Its image is:
 
 ```text
 out/ayaneo-pocket-evo/Archneo-ayaneo-pocket-evo-early-boot-diagnostic.img.gz
@@ -238,9 +239,12 @@ built-ins. Linux resolves the fixed root GPT UUID and mounts ext4 directly.
 The Android boot-image ramdisk is a valid empty `newc` archive. The baseline
 kernel deltas are recorded in
 [`config/kernel/archneo-sm8550.fragment`](../config/kernel/archneo-sm8550.fragment).
-The diagnostic relink additionally enables configfs CDC ACM and the USB serial
-console. Those options are asserted after `olddefconfig` and do not alter the
-ordinary direct-root kernel configuration.
+The diagnostic relink additionally enables configfs CDC ACM, Qualcomm DWC3
+dual-role dependencies, debugfs, and the USB serial console while continuing
+to require `CONFIG_INITRAMFS_SOURCE=""`. Those options are asserted after
+`olddefconfig` and do not alter the ordinary direct-root kernel configuration.
+The generated initramfs is supplied externally in the removable `/KERNEL`
+container and compared byte-for-byte by the structural boot-image validator.
 
 ## Reproducibility boundary
 

@@ -1,6 +1,6 @@
 # ADR 0008: Add a USB ACM diagnostic console for Pocket EVO
 
-- Status: accepted for the next diagnostic image
+- Status: superseded for active bring-up by ADR 0010
 - Date: 2026-09-05
 
 ## Context
@@ -60,3 +60,15 @@ change to ABL or to the ROCKNIX device tree.
   because the Qualcomm USB controller and Type-C role path are additional
   dependencies. FAT capture remains enabled as the parallel evidence path.
 - The image modifies only removable media and does not install or update ABL.
+
+## Supersession
+
+The first hardware test containing this console and ADR 0009's corrected DTB
+symbols still produced no FAT stage, root marker, journal, or `/home`
+expansion. Its manifest confirmed that the functional initramfs was built into
+Linux while the Android boot-image ramdisk remained `dummy`.
+
+[ADR 0010](0010-external-diagnostic-initramfs.md) retains every USB-console
+decision above but moves the exact same functional initramfs into the ramdisk
+field of the removable SD card's `/KERNEL` file. It does not write an Android
+or ABL partition.

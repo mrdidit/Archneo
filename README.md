@@ -28,8 +28,8 @@ The similarly named AYANEO Pocket S2 is an SM8650 device and is not one of
 these initial targets. Source preparation and the earlier single-DTB `KERNEL`
 payload passed CI. Rootfs, firmware, and complete removable-image assembly also
 passed CI before the active boot-profile change. A hardware test of the
-corrected built-in-initramfs image still left the display black and produced no
-systemd journal or userspace marker.
+corrected built-in-initramfs image still produced no systemd journal or
+userspace marker.
 
 An external Pocknix SM8550 image was reported booting on Pocket S
 2K when that model is selected in ROCKNIX-ABL, although its audio does not
@@ -44,11 +44,13 @@ The ABL-facing FAT32 partition remains 2 GiB, named `system`, and labelled
 `ROCKNIX`. The installed ROCKNIX-ABL is a prerequisite and is left untouched.
 
 The first EVO USB and microSD tests produced no systemd journal or userspace
-marker. A subsequent built-in-initramfs test also left no FAT diagnostic file,
-despite an intact payload and matching root `PARTUUID`. The active follow-up
-adds a CDC ACM console to that diagnostic image. If Linux reaches the
-initramfs, a connected Linux host should expose `/dev/ttyACM0` independently
-of the EVO display and SD-card write path.
+marker. Two subsequent built-in-initramfs tests also left no FAT diagnostic
+file, despite intact payloads, matching root `PARTUUID`, restored ROCKNIX DTB
+symbols, and a built-in CDC ACM console. The active follow-up puts the
+functional Archneo initramfs in the Android boot-image ramdisk inside the SD
+card's `/KERNEL` file. If ABL forwards it and Linux reaches the hook, a
+connected Linux host should expose `Archneo Early Boot Console` as
+`/dev/ttyACM0` independently of the EVO display and SD-card write path.
 
 The image boots to `tty1` and asks independently for `root` and `deck`
 passwords before starting the normal login prompt. `deck` has

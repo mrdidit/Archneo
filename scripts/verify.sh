@@ -125,8 +125,8 @@ done
   archneo_die "home seed size must be a positive MiB value"
 [[ "$ARCHNEO_ROOTFS_SCHEMA" =~ ^[1-9][0-9]*$ ]] || \
   archneo_die "rootfs schema must be a positive integer"
-[[ "$ARCHNEO_ROOTFS_SCHEMA" == "7" ]] || \
-  archneo_die "rootfs schema must include the USB ACM diagnostic console"
+[[ "$ARCHNEO_ROOTFS_SCHEMA" == "8" ]] || \
+  archneo_die "rootfs schema must include the external USB diagnostic initramfs"
 [[ "$ARCHNEO_ROOT_FS_UUID" != "$ARCHNEO_HOME_FS_UUID" ]] || \
   archneo_die "root and home filesystem UUIDs must be different"
 
@@ -157,10 +157,10 @@ while IFS= read -r script; do
   bash -n "$script"
   [[ -x "$script" ]] || archneo_die "script is not executable: ${script}"
 done < <(
-  find \
-    "${ARCHNEO_PROJECT_ROOT}/scripts" \
-    "${ARCHNEO_PROJECT_ROOT}/rootfs-overlay/usr/local/sbin" \
-    -type f | LC_ALL=C sort
+  {
+    find "${ARCHNEO_PROJECT_ROOT}/scripts" -type f -name '*.sh'
+    find "${ARCHNEO_PROJECT_ROOT}/rootfs-overlay/usr/local/sbin" -type f
+  } | LC_ALL=C sort
 )
 
 while IFS= read -r initcpio_hook; do
@@ -205,14 +205,36 @@ grep -Fq 'usb_diagnostic="cdc-acm:ttyGS0"' "$package_kernel" || \
   archneo_die "diagnostic KERNEL does not record its USB ACM console"
 grep -Fq 'usb_console_argument="console=ttyGS0,115200n8"' "$package_kernel" || \
   archneo_die "diagnostic KERNEL does not select ttyGS0"
+grep -Fq 'initramfs_delivery="android-boot-ramdisk"' "$package_kernel" || \
+  archneo_die "diagnostic KERNEL does not use the Android ramdisk field"
+grep -Fq 'ARCHNEO_EXTERNAL_INITRAMFS' "$package_kernel" || \
+  archneo_die "diagnostic KERNEL does not accept an external initramfs"
+grep -Fq 'verify-boot-image.py' "$package_kernel" || \
+  archneo_die "packaging does not structurally verify the Android boot image"
 
-embed_initramfs="${ARCHNEO_PROJECT_ROOT}/scripts/embed-initramfs.sh"
-grep -Fq 'DTC_FLAGS=-@ Image' "$embed_initramfs" || \
+diagnostic_kernel="${ARCHNEO_PROJECT_ROOT}/scripts/package-diagnostic-kernel.sh"
+grep -Fq 'DTC_FLAGS=-@ Image' "$diagnostic_kernel" || \
   archneo_die "diagnostic relink does not preserve ROCKNIX DTB symbols"
-for usb_console_setting in USB_CONFIGFS_ACM U_SERIAL_CONSOLE; do
-  grep -Fq -- "--enable ${usb_console_setting}" "$embed_initramfs" || \
+grep -Fxq 'grep -Fxq '\''CONFIG_INITRAMFS_SOURCE=""'\'' "$kernel_config" || \' \
+  "$diagnostic_kernel" || \
+  archneo_die "diagnostic kernel does not reject a built-in initramfs"
+for usb_console_setting in DEBUG_FS USB_CONFIGFS USB_CONFIGFS_ACM \
+  USB_U_SERIAL USB_F_ACM U_SERIAL_CONSOLE; do
+  grep -Fq -- "--enable ${usb_console_setting}" "$diagnostic_kernel" || \
     archneo_die "diagnostic kernel does not enable ${usb_console_setting}"
 done
+[[ ! -e "${ARCHNEO_PROJECT_ROOT}/scripts/embed-initramfs.sh" ]] || \
+  archneo_die "obsolete built-in-initramfs packager is still present"
+
+boot_validator="${ARCHNEO_PROJECT_ROOT}/scripts/verify-boot-image.py"
+python3 -c 'import ast, pathlib, sys; ast.parse(pathlib.Path(sys.argv[1]).read_text())' \
+  "$boot_validator" || archneo_die "boot-image validator has invalid Python syntax"
+grep -Fq 'ramdisk != expected_ramdisk' "$boot_validator" || \
+  archneo_die "boot-image validator does not compare the packaged initramfs"
+grep -Fq 'ARM64_IMAGE_MAGIC' "$boot_validator" || \
+  archneo_die "boot-image validator does not verify an arm64 Image"
+grep -Fq 'FDT_MAGIC' "$boot_validator" || \
+  archneo_die "boot-image validator does not parse the appended DTB set"
 
 kernel_builder="${ARCHNEO_PROJECT_ROOT}/scripts/build-kernel.sh"
 grep -Fq 'DTC_FLAGS=-@ Image modules' "$kernel_builder" || \
@@ -241,6 +263,8 @@ grep -Fq 'ARCHNEO_EARLY_BOOT_DIAGNOSTICS' "$build_image" || \
   archneo_die "image builder has no early-boot diagnostic mode"
 grep -Fq 'initramfs-linux-archneo.cpio.gz' "$build_image" || \
   archneo_die "diagnostic initramfs is not copied to the inspection filesystem"
+grep -Fq 'initramfs_delivery=android-boot-ramdisk' "$build_image" || \
+  archneo_die "image builder does not require the external diagnostic initramfs"
 
 workflow="${ARCHNEO_PROJECT_ROOT}/.github/workflows/kernel.yml"
 grep -Fq 'ARCHNEO_EARLY_BOOT_DIAGNOSTICS: "1"' "$workflow" || \

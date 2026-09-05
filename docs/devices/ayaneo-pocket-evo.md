@@ -146,3 +146,23 @@ device is described as supported.
 - Next controlled change: ADR 0008 adds a configfs CDC ACM console on `ttyGS0`
   while keeping the FAT evidence path active. ADR 0009 also restores
   ROCKNIX's omitted `DTC_FLAGS=-@` build setting and rejects symbol-less DTBs.
+
+## Fourth hardware attempt
+
+- Date reported and inspected: 2026-09-05
+- Image: GitHub Actions run
+  [`33978519750`](https://github.com/mrdidit/Archneo/actions/runs/33978519750),
+  commit `76d207f28dee952ee94836993337a5961ffdb0d6`
+- Medium: microSD
+- Payload evidence: both checksums passed; the manifest selected Pocket EVO,
+  recorded all 14 DTBs with `dtb_symbols=required-present`, used the exact root
+  `PARTUUID`, and enabled `cdc-acm:ttyGS0`
+- Initramfs delivery: kernel built-in; Android ramdisk literal `dummy`
+- Runtime evidence: no FAT diagnostic directory, initramfs/root marker,
+  journal, populated machine ID, or `/home` expansion existed after the test
+- Interpretation: the corrected DTB compilation and built-in USB-console image
+  still did not prove initramfs entry. The card content and identities were
+  intact, so repeating the same image cannot add information.
+- Next controlled change: ADR 0010 retains the diagnostic kernel and hook but
+  delivers the functional initramfs through the Android ramdisk field of the
+  removable SD card's `/KERNEL` file.

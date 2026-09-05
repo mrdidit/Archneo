@@ -23,10 +23,12 @@ boots on Pocket S 2K, with audio not working. Archneo now applies that low-level
 ABL envelope to a separate Pocket EVO profile while retaining ext4, Archneo
 userspace, and the official rolling Arch Linux ARM repositories. A Pocket EVO
 is locally available. Its first USB and microSD tests produced no systemd
-journal or userspace marker. The FAT-persisted initramfs image was intact on
-the tested card but produced no stage file. The immediate target is therefore
-a USB CDC ACM console that can expose kernel and initramfs output without a
-working panel or writable SD device.
+journal or userspace marker. The FAT-persisted initramfs images were intact on
+the tested cards but produced no stage file. The first built-in USB CDC ACM
+diagnostic and restored-DTB-symbol test also left no persistent evidence. The
+immediate target is therefore the same console and hook delivered through the
+removable `/KERNEL` file's external Android ramdisk, which is an implemented
+SM8550 ABL path in Thorch.
 
 ## Phases
 

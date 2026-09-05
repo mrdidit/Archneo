@@ -28,7 +28,7 @@ dt_build_dir="${kernel_build_dir}/arch/arm64/boot/dts/qcom"
 kernel_gz="${device_out}/kernel.gz"
 ramdisk="${device_out}/ramdisk"
 kernel_payload="${device_out}/KERNEL"
-builtin_initramfs="${ARCHNEO_BUILTIN_INITRAMFS:-}"
+external_initramfs="${ARCHNEO_EXTERNAL_INITRAMFS:-}"
 
 [[ -f "$image" ]] || archneo_die "kernel Image was not built"
 mapfile -t dtb_names < <(
@@ -62,17 +62,18 @@ for dtb_name in "${dtb_names[@]}"; do
   cat -- "${dt_build_dir}/${dtb_name}" >> "$kernel_gz"
 done
 
-if [[ -n "$builtin_initramfs" ]]; then
-  [[ -s "$builtin_initramfs" ]] || \
-    archneo_die "built-in initramfs is missing or empty: ${builtin_initramfs}"
-  [[ "$builtin_initramfs" == *.cpio.gz ]] || \
-    archneo_die "built-in initramfs must use the .cpio.gz suffix"
-  # Match ROCKNIX's proven ABL container: the functional initramfs is linked
-  # into Image and the Android boot-image ramdisk remains the literal dummy.
-  printf 'dummy' > "$ramdisk"
-  ramdisk_kind="rocknix-dummy"
-  initramfs_delivery="kernel-built-in"
-  builtin_initramfs_sha256="$(sha256sum -- "$builtin_initramfs" | awk '{print $1}')"
+if [[ -n "$external_initramfs" ]]; then
+  [[ -s "$external_initramfs" ]] || \
+    archneo_die "external initramfs is missing or empty: ${external_initramfs}"
+  [[ "$external_initramfs" == *.cpio.gz ]] || \
+    archneo_die "external initramfs must use the .cpio.gz suffix"
+  # This is a file inside the removable SD image, not an Android partition.
+  # ABL consumes the Android boot-image-v0 container at /KERNEL and forwards
+  # this functional ramdisk to Linux as its early userspace.
+  cp -- "$external_initramfs" "$ramdisk"
+  ramdisk_kind="archneo-initramfs"
+  initramfs_delivery="android-boot-ramdisk"
+  initramfs_sha256="$(sha256sum -- "$external_initramfs" | awk '{print $1}')"
   root_argument="root=PARTUUID=${ARCHNEO_ROOT_PART_GUID}"
   diagnostic_arguments="boot=LABEL=${ROCKNIX_ABL_BOOT_LABEL} rd.debug rd.log=all"
   usb_diagnostic="cdc-acm:ttyGS0"
@@ -85,7 +86,7 @@ else
   printf '' | cpio --quiet -o -H newc > "$ramdisk"
   ramdisk_kind="empty-newc"
   initramfs_delivery="none-direct-root"
-  builtin_initramfs_sha256="none"
+  initramfs_sha256="none"
   root_argument="root=PARTUUID=${ARCHNEO_ROOT_PART_GUID}"
   diagnostic_arguments=""
   usb_diagnostic="none"
@@ -107,6 +108,16 @@ python3 "${mkbootimg_dir}/mkbootimg.py" \
   --cmdline "$cmdline" \
   -o "$kernel_payload"
 
+validator_args=(
+  "$kernel_payload"
+  --expected-kernel "$kernel_gz"
+  --expected-ramdisk "$ramdisk"
+  --expected-cmdline "$cmdline"
+  --expected-dtb-count "${#dtb_names[@]}"
+  --require-dtb-symbols
+)
+python3 "${SCRIPT_DIR}/verify-boot-image.py" "${validator_args[@]}"
+
 (
   cd "$device_out"
   md5sum KERNEL > KERNEL.md5
@@ -121,7 +132,7 @@ dtb_list="$(IFS=,; printf '%s' "${dtb_names[*]}")"
   printf 'ramdisk_kind=%s\n' "$ramdisk_kind"
   printf 'ramdisk_sha256=%s\n' "$(sha256sum -- "$ramdisk" | awk '{print $1}')"
   printf 'initramfs_delivery=%s\n' "$initramfs_delivery"
-  printf 'builtin_initramfs_sha256=%s\n' "$builtin_initramfs_sha256"
+  printf 'initramfs_sha256=%s\n' "$initramfs_sha256"
   printf 'usb_diagnostic=%s\n' "$usb_diagnostic"
   printf 'selected_dtb=%s\n' "$selected_dtb_name"
   printf 'dtb_selection=abl-appended-set\n'

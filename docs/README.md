@@ -25,6 +25,7 @@ and known limitations are part of the deliverable.
 - [ADR 0007: add an early-boot diagnostic initramfs for Pocket EVO](decisions/0007-early-boot-diagnostic-initramfs.md)
 - [ADR 0008: add a USB ACM diagnostic console for Pocket EVO](decisions/0008-usb-acm-diagnostic-console.md)
 - [ADR 0009: preserve ROCKNIX DTB overlay symbols](decisions/0009-preserve-rocknix-dtb-symbols.md)
+- [ADR 0010: deliver the diagnostic initramfs in the removable `/KERNEL` ramdisk](decisions/0010-external-diagnostic-initramfs.md)
 
 ## Documentation rules
 

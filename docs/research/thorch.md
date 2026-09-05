@@ -38,23 +38,23 @@ does not import RNDIS, SSH, ADB, or Thorch's userspace service.
 
 Reference: [Thorch USB gadget](https://github.com/thorch-os/thorch/blob/82e7472e6cad5c08a55c3aef92ef5be218621b2c/packages/thorch-bsp/payload/usr/bin/thorch-usb-gadget)
 
-## Findings retained for later evaluation
+## Finding adopted after the next hardware inspection
 
-Thorch repacks an imported official ROCKNIX `KERNEL` template, preserving the
-Android boot header values, and supplies its functional initramfs as the boot
-image ramdisk. Archneo currently reproduces the pinned public ROCKNIX header
-recipe and uses a built-in initramfs while Pocket EVO bring-up is isolated.
-Thorch demonstrates that the external-ramdisk design is viable on AYN Thor; it
-does not prove the same private ABL behavior on Pocket EVO. After the current
-hardware test, an imported-template/external-ramdisk build is a controlled A/B
-candidate rather than an immediate replacement.
+Thorch repacks an imported official ROCKNIX `KERNEL` template and supplies its
+functional initramfs as the boot-image ramdisk. Archneo reproduces the pinned
+public ROCKNIX header recipe rather than importing Thorch's template. After a
+corrected Pocket EVO built-in-initramfs image still produced no persistent
+evidence, ADR 0010 adopted external initramfs delivery as the next controlled
+test. This establishes a testable path; it does not prove the same private ABL
+behavior on Pocket EVO.
+
+## Findings retained for later evaluation
 
 Thorch's structural Android boot-image parser validates header layout,
 ramdisk contents, appended FDT boundaries, overlay symbols, model selection,
-command-line requirements, and root UUID. Archneo should gain equivalent
-structural validation before release images and boot updates are supported.
-Directly adapting that implementation would require GPL-2.0-or-later licence
-compatibility and attribution.
+command-line requirements, and root UUID. ADR 0010 adds an independently
+written Archneo validator for the subset required by the current image. Model
+property validation and safe boot-update transactions remain later work.
 
 Thorch also stages boot updates and preserves `KERNEL.previous`. Its update and
 installer safety tests are useful design references for Archneo's later
